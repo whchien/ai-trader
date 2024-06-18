@@ -13,6 +13,7 @@ class RsiBollingerBandsStrategy(BaseStrategy):
     Buy when the RSI is below 30 and the price is below the lower Bollinger Band.
     Sell when the RSI is above 70 or the price is above the upper Bollinger Band.
     """
+
     params = (
         ("rsi_period", 14),
         ("bb_period", 20),

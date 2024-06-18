@@ -8,6 +8,7 @@ class MTMStrategy(BaseStrategy):
     """
     https://en.wikipedia.org/wiki/Momentum_(technical_analysis)
     """
+
     params = (
         ("sma_period", 50),
         ("momentum_period", 14),
@@ -42,13 +43,10 @@ class NaiveROCStrategy(BaseStrategy):
 
     """
 
-    params = (("period", 20),
-              "threshold", 0.08
-              )
+    params = (("period", 20), "threshold", 0.08)
 
     def __init__(self):
-        self.roc = bt.ind.RateOfChange(self.data,
-                                       period=self.params.period)
+        self.roc = bt.ind.RateOfChange(self.data, period=self.params.period)
         self.buy_signal = self.roc > self.params.threshold
         self.close_signal = self.roc < -self.params.threshold
 

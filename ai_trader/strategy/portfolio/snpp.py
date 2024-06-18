@@ -99,7 +99,7 @@ class SNPPreimumStrategy(BaseStrategy):
         if self.num_of_holdings >= self.params.max_holdings:
             return
 
-        # Calculate the amount of capital to allocate to each individual. Here we're using even-weighting method
+        # Calculate the amount of capital to allocate to each indiv. Here we're using even-weighting method
         amount_to_allocate = self.available_cash / (
             self.params.max_holdings - self.num_of_holdings
         )

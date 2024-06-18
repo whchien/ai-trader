@@ -5,12 +5,12 @@ from ai_trader.strategy.base import BaseStrategy
 
 
 class NaiveSMAStrategy(BaseStrategy):
-    params = (
-        ("period", 15),
-    )
+    params = (("period", 15),)
 
     def __init__(self):
-        self.sma = bt.indicators.MovingAverageSimple(self.data.close, period=self.params.period)
+        self.sma = bt.indicators.MovingAverageSimple(
+            self.data.close, period=self.params.period
+        )
         self.signal_buy = self.data.close > self.sma
         self.signal_close = self.data.close < self.sma
 

@@ -29,7 +29,6 @@ class MacdStrategy(BaseStrategy):
     )
 
     def __init__(self):
-
         kwargs = {
             "fastperiod": self.p.fastperiod,
             "fastmatype": bt.talib.MA_Type.EMA,

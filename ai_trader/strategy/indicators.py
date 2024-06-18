@@ -21,15 +21,28 @@ class RSRS(bt.Indicator):
     A higher R-squared value (closer to 1) suggests a better fit of the regression line to the .data,
     indicating stronger trend reliability.
 
-    The interpretation of the RSRS indicator involves analyzing the slope coefficient and R-squared value. A strong positive slope coupled with a high R-squared value may indicate a robust resistance level and a potential downtrend in the security's price. Conversely, a strong negative slope with a high R-squared value may suggest a robust support level and a potential uptrend.
+    The interpretation of the RSRS indicator involves analyzing the slope coefficient and R-squared value.
+    A strong positive slope coupled with a high R-squared value may indicate a robust resistance level and a potential
+    downtrend in the security's price. Conversely, a strong negative slope with a high R-squared value may suggest a
+    robust support level and a potential uptrend.
 
     The formula for RSRS is:
     Highest Price = α + β × Lowest Price
-    where the slope coefficient β represents the degree to which the highest price changes relative to the lowest price. When the lowest price changes by 1, the highest price changes by β. When the slope coefficient β is large, the support strength is greater than the resistance strength, indicating that the highest price's change is faster than the lowest price's change, and the upward movement of the price has more space. Conversely, when the slope coefficient β is small, the resistance strength is greater than the support strength, indicating that the highest price's change is slower than the lowest price's change, and the upward movement of the price is gradually weakened.
+    where the slope coefficient β represents the degree to which the highest price changes relative to the lowest price.
+    When the lowest price changes by 1, the highest price changes by β. When the slope coefficient β is large,
+    the support strength is greater than the resistance strength, indicating that the highest price's change is faster
+    than the lowest price's change, and the upward movement of the price has more space. Conversely, when the slope
+    coefficient β is small, the resistance strength is greater than the support strength, indicating that the highest
+    price's change is slower than the lowest price's change, and the upward movement of the price is gradually weakened.
 
-    To use RSRS as a timing indicator, it is compared with its own historical values to calculate the Z-Score standardization. The RSRS value is obtained by standardizing the current value relative to its historical values. This is done by taking M slope coefficients β and forming a sequence, calculating the mean and standard deviation of the sequence, and then calculating the Z-Score as (current value - mean) / standard deviation.
+    To use RSRS as a timing indicator, it is compared with its own historical values to calculate the Z-Score
+    standardization. The RSRS value is obtained by standardizing the current value relative to its historical values.
+    This is done by taking M slope coefficients β and forming a sequence, calculating the mean and standard deviation
+    of the sequence, and then calculating the Z-Score as (current value - mean) / standard deviation.
 
-    Since the RSRS indicator has already undergone standardization, the .data distribution follows a mean of 0 and a standard deviation of 1. The simplest approach is to take a long position when RSRS is above a threshold S and take a short position when RSRS is below -S.
+    Since the RSRS indicator has already undergone standardization, the .data distribution follows a mean of 0 and a
+    standard deviation of 1. The simplest approach is to take a long position when RSRS is above a threshold S and take
+    a short position when RSRS is below -S.
     """
 
     lines = ("rsrs", "R2")
@@ -175,7 +188,6 @@ class TripleRSI(bt.Indicator):
         value += abs(self.rsi_mid[0] - self.params.overbought)
 
         # Short-term RSI at a high level and showing signs of consolidation
-        # 短週期RSI高檔頓化
         recent_short_rsi = self.rsi_short.get(size=3)
         cond_3 = min([r > self.params.oversold for r in recent_short_rsi])
 
@@ -284,7 +296,7 @@ class VolatilityContractionPattern(bt.Indicator):
         )
 
         # Condition 2: The current closing price must be the highest in the past 100 days
-        # This indicates the individual is reaching a new high
+        # This indicates the indiv is reaching a new high
         cond_2 = self.data.close[0] == self.price_past_100_high[0]
 
         # Condition 3: The current volume must be greater than 80% of the 20-day average volume
@@ -293,4 +305,3 @@ class VolatilityContractionPattern(bt.Indicator):
 
         # Set the VCP line value to 1 if all conditions are met, otherwise set to -1
         self.lines.vcp[0] = 1 if cond_1 & cond_2 & cond_3 else -1
-

@@ -25,10 +25,10 @@ class ROCStochStrategy(BaseStrategy):
 
     def next(self):
         signal_buy = (
-                self.roc[0] > 0 and self.stoch.lines.percK[0] < self.params.oversold
+            self.roc[0] > 0 and self.stoch.lines.percK[0] < self.params.oversold
         )
         signal_sell = (
-                self.roc[0] < 0 and self.stoch.lines.percK[0] > self.params.overbought
+            self.roc[0] < 0 and self.stoch.lines.percK[0] > self.params.overbought
         )
 
         if self.position.size == 0:

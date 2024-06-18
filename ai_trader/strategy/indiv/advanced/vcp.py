@@ -22,9 +22,10 @@ class VolatilityContractionStrategy(BaseStrategy):
     traders are participating, which can precede a significant move when volume returns. A significant increase in
     volume during the breakout confirms the strength of the move.
 
-    Breakout: After a period of contraction, the individual breaks out above a resistance level on increased volume.
+    Breakout: After a period of contraction, the indiv breaks out above a resistance level on increased volume.
     This breakout is the signal for traders to enter a position, anticipating a continued upward move.
     """
+
     params = (
         ("rsi_short", 20),
         ("rsi_mid", 60),
@@ -46,14 +47,14 @@ class VolatilityContractionStrategy(BaseStrategy):
         cond_1 = self.vcp > 0
 
         # Condition 2: The current volume times the current closing price must be greater than 2,000,000
-        # This ensures that the individual has sufficient liquidity
+        # This ensures that the indiv has sufficient liquidity
         cond_2 = self.data.volume[0] * self.data.close[0] > 2000000
 
         # Condition 3: The current closing price must be above the 250-day simple moving average (SMA)
-        # This indicates that the individual is in an upward trend over the long term
+        # This indicates that the indiv is in an upward trend over the long term
         cond_3 = self.data.close[0] > self.sma_250[0]
 
-        # Condition 4: The individual must be in a narrow price channel
+        # Condition 4: The indiv must be in a narrow price channel
         # This suggests a period of consolidation, which can precede a breakout
         cond_4 = self.narrow_channel > 0
 

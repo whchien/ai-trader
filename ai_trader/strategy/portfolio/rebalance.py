@@ -32,7 +32,7 @@ class St(BaseStrategy):
         # calculate 1st the amount of stocks that will be selected
         self.selnum = int(len(self.datas) * self.p.selcperc)
 
-        # allocation perc per individual
+        # allocation perc per indiv
         # reserve kept to make sure orders are not rejected due to
         # margin. Prices are calculated when known (close), but orders can only
         # be executed next day (opening price). Price can gap upwards

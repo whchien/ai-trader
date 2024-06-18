@@ -127,7 +127,7 @@ class AITrader:
             timeframe=bt.TimeFrame.Days,
         )
         self.cerebro.adddata(feed)
-        self.log("Load one individual .data.")
+        self.log("Load one indiv .data.")
 
     def add_datas(self, resample_to_m: bool = False):
         open_, high, low, close, adj_close, volume = load_tw_stocks()
@@ -203,8 +203,8 @@ class AITrader:
         drawdown = result[0].analyzers.DrawDown.get_analysis()["max"]["drawdown"]
         self.log(f"Drawdown: {round(drawdown,2)}")
 
-    def run(self, data_type: str = "individual", sizer: bool = True):
-        if data_type == "individual":
+    def run(self, data_type: str = "indiv", sizer: bool = True):
+        if data_type == "indiv":
             self.add_data()
 
         elif data_type == "portfolio":
