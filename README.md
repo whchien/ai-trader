@@ -2,6 +2,8 @@
 
 This repository demonstrates how to implement different algorithmic trading strategies using the Backtrader framework with a focus on AI. It includes examples for both the US and Taiwanese stock markets.
 
+Some of my codes are still in development and not fully clean or functional at the moment, but I am actively working on updates and improvements.
+
 ## Strategy overview 
 ### Single stock trading 
 - SMA
@@ -21,7 +23,7 @@ This repository demonstrates how to implement different algorithmic trading stra
 - Triple RSI
 - Sector momentum
 
-### Machine learning based (code review)
+### Machine learning based
 - Logistic regression
 - Gradient boosting 
 - LSTM 
