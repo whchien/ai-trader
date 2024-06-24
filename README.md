@@ -17,13 +17,16 @@ Some of my codes are still in development and not fully clean or functional at t
 - Turtle
 - VCP
 
-### Portfolio trading
+### Portfolio trading (dev)
 - ROC rotation
 - RSRS rotation
 - Triple RSI
 - Sector momentum
 
-### Machine learning based
+### Machine learning based (dev)
 - Logistic regression
-- Gradient boosting 
-- LSTM 
+- Gradient boosting
+- DNN
+- RNN
+- LSTM
+- Reinforcemnt learning
