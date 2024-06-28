@@ -1,229 +1,145 @@
+import glob
 import os
-from pathlib import Path
+from typing import Optional, List
 
 import backtrader as bt
 import pandas as pd
 
-from ai_trader.data.load import load_test, load_tw_stocks, to_one_stock
+from ai_trader.loader import load_example
 from ai_trader.strategy.base import BaseStrategy
-
-COMPLETE_TICKERS = [
-    "1565",
-    "1569",
-    "1815",
-    "3078",
-    "3083",
-    "3088",
-    "3202",
-    "3211",
-    "3213",
-    "3218",
-    "3227",
-    "3260",
-    "3290",
-    "3293",
-    "3313",
-    "3324",
-    "3325",
-    "3388",
-    "3402",
-    "3483",
-    "4105",
-    "4111",
-    "4121",
-    "4127",
-    "4129",
-    "4401",
-    "4417",
-    "4707",
-    "4721",
-    "4908",
-    "4909",
-    "5015",
-    "5347",
-    "5355",
-    "5425",
-    "5426",
-    "5439",
-    "5452",
-    "5488",
-    "5490",
-    "5508",
-    "5512",
-    "5530",
-    "5609",
-    "5905",
-    "6104",
-    "6118",
-    "6123",
-    "6125",
-    "6126",
-    "6127",
-    "6129",
-    "6143",
-    "6146",
-    "6147",
-    "6160",
-    "6163",
-    "6170",
-    "6180",
-    "6182",
-    "6187",
-    "6188",
-    "6223",
-    "6231",
-    "6233",
-    "6234",
-    "6237",
-    "6245",
-    "6261",
-    "6263",
-    "6274",
-    "6279",
-    "6290",
-    "6508",
-    "6509",
-    "6609",
-    "8049",
-    "8054",
-    "8064",
-    "8069",
-    "8076",
-    "8088",
-    "8092",
-    "8096",
-    "8099",
-    "8109",
-    "8121",
-    "8182",
-    "8183",
-    "8255",
-    "8299",
-    "8383",
-    "8930",
-    "8936",
-]
+from ai_trader.utils import extract_ticker_from_path
 
 
 class AITrader:
-    def __init__(self):
-        self.cerebro = bt.Cerebro()
-        self.start_date = None
-        self.end_date = None
-        self.rebalance_freq = "D"
+    """
+    AITrader is a wrapper for Backtrader functions, designed to accelerate the strategy development process.
+    """
 
-    def log(self, txt: str):
+    def __init__(
+        self,
+        strategy: Optional[BaseStrategy] = None,
+        cash: int = 1000000,
+        commission: float = 0.001425,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        data_dir: Optional[str] = "./data/tw_stock/",
+    ):
+        """
+        Initializes the AITrader with the given parameters.
+        """
+        self.cash = cash
+        self.commission = commission
+        self.start_date = start_date
+        self.end_date = end_date
+        self.strategy = strategy
+        self.data_dir = data_dir
+        self.cerebro = bt.Cerebro()
+
+    def log(self, txt: str) -> None:
+        """
+        Logs a message to the console.
+        """
         print(txt)
 
-    def add_strategy(self, strategy: BaseStrategy):
+    def add_strategy(self, strategy: BaseStrategy) -> None:
+        """
+        Adds a trading strategy to the cerebro instance.
+        """
+        self.strategy = strategy
         self.cerebro.addstrategy(strategy)
-        self.log("Add strategy.")
+        self.log("Strategy added.")
 
-    def add_data(self):
-        df = load_test()
+    def add_one_stock(self, df: Optional[pd.DataFrame] = None) -> None:
+        """
+        Loads classic test data into the cerebro instance.
+        """
+        if df is None:
+            df = load_example()
+
+        df = df[self.start_date : self.end_date]
         feed = bt.feeds.PandasData(
             dataname=df,
             openinterest=None,
             timeframe=bt.TimeFrame.Days,
         )
         self.cerebro.adddata(feed)
-        self.log("Load one indiv .data.")
+        self.log("Data loaded.")
 
-    def add_datas(self, resample_to_m: bool = False):
-        open_, high, low, close, adj_close, volume = load_tw_stocks()
+    def add_stocks(self, date_col: str = "date") -> None:
+        """
+        Loads portfolio data for multiple stocks into the cerebro instance.
+        """
+        files = glob.glob(os.path.join(self.data_dir, "*.csv"))
 
-        tickers = COMPLETE_TICKERS  # [:30]
-
-        for ticker in tickers:
-            df = to_one_stock(ticker, open_, high, low, close, adj_close, volume)
-            df = df["2020":"2024"]
-
-            if resample_to_m:
-                df = df.resample("M").last()
-                data = bt.feeds.PandasData(
-                    dataname=df, name=ticker, timeframe=bt.TimeFrame.Months, plot=False
-                )
-            else:
-                data = bt.feeds.PandasData(
-                    dataname=df, name=ticker, timeframe=bt.TimeFrame.Days, plot=False
-                )
-
+        for file in files:
+            df = pd.read_csv(file, parse_dates=[date_col], index_col=[date_col])
+            df = df[self.start_date : self.end_date]
+            ticker = extract_ticker_from_path(file)
+            data = bt.feeds.PandasData(
+                dataname=df, name=ticker, timeframe=bt.TimeFrame.Days, plot=False
+            )
             self.cerebro.adddata(data, name=ticker)
 
-        self.log(f"Added tickers: {tickers}")
-
-    def add_ts_data(self):
-        datapath = Path(os.getcwd()) / "./.data/2303.csv"
-        df = pd.read_csv(datapath, parse_dates=["Date"], index_col=["Date"])
-
-        data = bt.feeds.PandasData(
-            dataname=df,
-            openinterest=None,
-            timeframe=bt.TimeFrame.Minutes,
-            compression=15,
-        )
-        self.cerebro.adddata(data, name="m15")
-        self.cerebro.resampledata(
-            data, name="h1", compression=60, timeframe=bt.TimeFrame.Minutes
-        )
-        self.cerebro.resampledata(data, name="d1", timeframe=bt.TimeFrame.Days)
-
     def add_analyzers(self) -> None:
+        """
+        Adds analyzers to the cerebro instance.
+        """
         self.cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="SharpeRatio")
         self.cerebro.addanalyzer(bt.analyzers.DrawDown, _name="DrawDown")
         self.cerebro.addanalyzer(bt.analyzers.Returns, _name="Returns")
-        # self.cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name="AnnualReturn")
-        # self.cerebro.addanalyzer(bt.analyzers.SQN, _name="SystemQualityNumber")
-        # self.cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="TradeAnalyzer")
-        # self.cerebro.addanalyzer(bt.analyzers.PyFolio, _name='PyFolio')
-        self.log("Set up analyzers.")
+        self.log("Analyzers added.")
 
-    def add_broker(self):
-        self.cerebro.broker.setcash(1000000.0)
-        self.cerebro.broker.setcommission(0.001425)
-        # self.cerebro.broker.set_coc(True)
+    def add_broker(self) -> None:
+        """
+        Configures the broker settings.
+        """
+        self.cerebro.broker.setcash(self.cash)
+        self.cerebro.broker.setcommission(commission=self.commission)
         self.log(f"Starting Value: {self.cerebro.broker.getvalue()}")
 
-    def add_sizer(self):
-        # self.cerebro.addsizer(bt.sizers.FixedSize, stake=1)
-        # cerebro.addsizer(bt.sizers.AllInSizerInt, percents=10)
+    def add_sizer(self) -> None:
+        """
+        Sets the sizer for position sizing.
+        """
         self.cerebro.addsizer(bt.sizers.PercentSizer, percents=95)
-        self.log("Set up sizer.")
+        self.log("Sizer set to 95%.")
 
-    def analyze(self, result):
+    def analyze(self, result: List[bt.Strategy]) -> None:
+        """
+        Analyzes the results of the backtest.
+        """
         self.log(f"Ending value: {round(self.cerebro.broker.getvalue())}")
 
         returns = result[0].analyzers.Returns.get_analysis()
-        self.log(f"Total Returns: {round(returns['rtot'],2)}")
-        self.log(f"Normalized Returns: {round(returns['rnorm'],2)}")
+        self.log(f"Total Returns: {round(returns['rtot'], 2)}")
+        self.log(f"Normalized Returns: {round(returns['rnorm'], 2)}")
 
-        sharpe = result[0].analyzers.SharpeRatio.get_analysis()["sharperatio"]
-        self.log(f"Sharpe: {round(sharpe,2)}")
+        sharpe = result[0].analyzers.SharpeRatio.get_analysis().get("sharperatio")
+        if sharpe:
+            self.log(f"Sharpe Ratio: {round(sharpe, 2)}")
 
-        drawdown = result[0].analyzers.DrawDown.get_analysis()["max"]["drawdown"]
-        self.log(f"Drawdown: {round(drawdown,2)}")
+        drawdown = (
+            result[0].analyzers.DrawDown.get_analysis().get("max", {}).get("drawdown")
+        )
+        if drawdown:
+            self.log(f"Max Drawdown: {round(drawdown, 2)}")
 
-    def run(self, data_type: str = "indiv", sizer: bool = True):
-        if data_type == "indiv":
-            self.add_data()
-
-        elif data_type == "portfolio":
-            self.add_datas()
-
-        elif data_type == "ts":
-            self.add_ts_data()
-        else:
-            raise "Not support"
-
-        self.add_broker()
-
-        if sizer:
+    def run(self) -> None:
+        """
+        Runs the backtest with the specified data type and sizer.
+        """
+        if self.strategy:
+            self.add_stocks()
+            self.add_broker()
             self.add_sizer()
+            self.add_analyzers()
+            result = self.cerebro.run()
+            self.analyze(result)
+        else:
+            raise ValueError("No strategy specified.")
 
-        self.add_analyzers()
-
-        result = self.cerebro.run()
-        self.analyze(result)
-
-    def plot(self):
+    def plot(self) -> None:
+        """
+        Plots the results of the backtest.
+        """
         self.cerebro.plot()

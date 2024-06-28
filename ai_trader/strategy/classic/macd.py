@@ -4,7 +4,7 @@ from ai_trader.trader import AITrader
 from ai_trader.strategy.base import BaseStrategy
 
 
-class MacdStrategy(BaseStrategy):
+class MACDStrategy(BaseStrategy):
     """
     MACD consists of three lines.
     DIF: the difference between two moving averages (fast moving average (typically 12 days) and
@@ -22,11 +22,7 @@ class MacdStrategy(BaseStrategy):
     traders can consider selling to avoid a downward trend.
     """
 
-    params = (
-        ("fastperiod", 10),
-        ("slowperiod", 22),
-        ("signalperiod", 8),
-    )
+    params = dict(fastperiod=12, slowperiod=22, signalperiod=8)
 
     def __init__(self):
         kwargs = {
@@ -61,7 +57,7 @@ class MacdStrategy(BaseStrategy):
 
 
 if __name__ == "__main__":
-    engine = AITrader()
-    engine.add_strategy(MacdStrategy)
-    engine.run()
-    engine.plot()
+    trader = AITrader()
+    trader.add_strategy(MACDStrategy)
+    trader.run()
+    trader.plot()

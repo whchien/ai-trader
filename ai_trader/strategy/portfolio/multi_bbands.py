@@ -1,26 +1,20 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import backtrader as bt
-from loguru import logger
-
 from ai_trader.strategy.base import BaseStrategy
 
 
-class MultiBollingerBandsStrategy(BaseStrategy):
+class MultiBBandsRotationStrategy(BaseStrategy):
+    params = dict(period=20)
+
     def __init__(self):
         self.inds = {}
         for data in self.datas:
             self.inds[data] = {}
-            top = bt.indicators.BollingerBands(data, period=20).top
-            self.inds[data]["buy"] = data.close - top
-            bot = bt.indicators.BollingerBands(data, period=20).bot
-            self.inds[data]["sell"] = data.close - bot
+            bbands = bt.indicators.BollingerBands(data, period=self.params.period)
+            self.inds[data]["buy"] = data.close - bbands.top
+            self.inds[data]["sell"] = data.close - bbands.bot
 
     def next(self):
-        # 判断当前已经持仓
-        to_buy = []
-        to_sell = []
-        holding = []
+        to_buy, to_sell, holding = [], [], []
         for data, ind in self.inds.items():
             if ind["buy"][0] > 0:
                 to_buy.append(data)
@@ -33,7 +27,7 @@ class MultiBollingerBandsStrategy(BaseStrategy):
 
         for sell in to_sell:
             if self.getposition(sell).size > 0:
-                logger.debug("清仓" + sell.p.name)
+                self.log(f"Leave: {sell.p.name}")
                 self.close(sell)
 
         new_hold = list(set(to_buy + holding))
@@ -52,7 +46,6 @@ class MultiBollingerBandsStrategy(BaseStrategy):
             new_hold = new_hold[:K]
             new_hold = [item[0] for item in new_hold]
 
-        # 等权重分配 todo: 已持仓的应应该不变，对cash对新增的等权分配
         if len(new_hold) > 0:
             weight = 1 / len(new_hold)
             for data in new_hold:

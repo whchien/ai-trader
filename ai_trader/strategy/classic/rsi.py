@@ -7,20 +7,11 @@ from ai_trader.strategy.indicators import TripleRSI
 
 class RsiBollingerBandsStrategy(BaseStrategy):
     """
-
-    Our strategy will generate buy and sell signals based on the following rules:
-
     Buy when the RSI is below 30 and the price is below the lower Bollinger Band.
     Sell when the RSI is above 70 or the price is above the upper Bollinger Band.
     """
 
-    params = (
-        ("rsi_period", 14),
-        ("bb_period", 20),
-        ("bb_dev", 2),
-        ("oversold", 30),
-        ("overbought", 70),
-    )
+    params = dict(rsi_period=14, bb_period=20, bb_dev=2, oversold=30, overbought=70)
 
     def __init__(self):
         self.rsi = bt.indicators.RSI(period=self.params.rsi_period)
@@ -47,11 +38,13 @@ class RsiBollingerBandsStrategy(BaseStrategy):
 
 
 class TripleRsiStrategy(BaseStrategy):
-    params = (
-        ("rsi_short", 20),
-        ("rsi_mid", 60),
-        ("rsi_long", 120),
-        ("holding_period", 60),
+    params = dict(
+        rsi_short=20,
+        rsi_mid=60,
+        rsi_long=120,
+        holding_period=60,
+        oversold=55,
+        overbought=75,
     )
 
     def __init__(self):
@@ -60,13 +53,15 @@ class TripleRsiStrategy(BaseStrategy):
             rsi_short=self.params.rsi_short,
             rsi_mid=self.params.rsi_mid,
             rsi_long=self.params.rsi_long,
+            oversold=self.params.oversold,
+            overbought=self.params.overbought,
         )
         self.sma = bt.indicators.MovingAverageSimple(self.data.close, period=60)
         self.entry_date = None
 
     def next(self):
         buy_signal = self.rsi > 0
-        close_signal = self.data.close[0] < self.sma[0]  # 跌破季線
+        close_signal = self.data.close[0] < self.sma[0]
 
         if self.position.size == 0:
             if buy_signal:
@@ -82,7 +77,7 @@ class TripleRsiStrategy(BaseStrategy):
 
 
 if __name__ == "__main__":
-    engine = AITrader()
-    engine.add_strategy(TripleRsiStrategy)
-    engine.run()
-    engine.plot()
+    trader = AITrader()
+    trader.add_strategy(TripleRsiStrategy)
+    trader.run()
+    trader.plot()

@@ -9,7 +9,7 @@ class BuyHoldStrategy(BaseStrategy):
 
 
 if __name__ == "__main__":
-    engine = AITrader()
-    engine.add_strategy(BuyHoldStrategy)
-    engine.run()
-    engine.plot()
+    trader = AITrader()
+    trader.add_strategy(BuyHoldStrategy)
+    trader.run()
+    trader.plot()

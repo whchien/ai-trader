@@ -72,8 +72,33 @@ class ROCMAStrategy(BaseStrategy):
                 self.close()
 
 
+class NaiveROCStrategy(BaseStrategy):
+    """
+    ROC = [(Current Close – Close n periods ago) / (Close n periods ago)]
+    ROC is a momentum oscillator; other indicator types similar to ROC include MACD, RSI and ADX,
+    https://www.avatrade.com/education/technical-analysis-indicators-strategies/roc-indicator-strategies
+
+    """
+
+    params = dict(period=20, threshold=0.08)
+
+    def __init__(self):
+        self.roc = bt.ind.RateOfChange(self.data, period=self.params.period)
+        self.buy_signal = self.roc > self.params.threshold
+        self.close_signal = self.roc < -self.params.threshold
+
+    def next(self):
+        if self.position.size == 0:
+            if self.buy_signal[0]:
+                self.buy()
+
+        if self.position.size > 0:
+            if self.close_signal[0]:
+                self.close()
+
+
 if __name__ == "__main__":
-    engine = AITrader()
-    engine.add_strategy(ROCMAStrategy)
-    engine.run()
-    engine.plot()
+    trader = AITrader()
+    trader.add_strategy(ROCMAStrategy)
+    trader.run()
+    trader.plot()
