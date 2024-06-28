@@ -1,4 +1,5 @@
 # ai-trader
+[中文版說明 (Chinese Subpage)](README_zh.md)
 
 This repository demonstrates how to implement 20+ algorithmic trading strategies using Backtrader framework with a focus on AI. It includes examples for both the US and Taiwanese stock markets.
 
@@ -25,6 +26,7 @@ Some of the codes are still in development and not fully clean or functional at 
 
 ### Machine learning based (dev)
 - Logistic regression
+- Feature engineering
 - Gradient boosting
 - DNN
 - RNN
@@ -45,7 +47,7 @@ Some of the codes are still in development and not fully clean or functional at 
     pip install -r requirements.txt
     ```
 
-3. Download the data (you can also prepare your own).
+3. (Optional) Download the data (you can also prepare your own).
     ```
     python ai_trader/loader.py
     ```
