@@ -5,6 +5,9 @@ This repository demonstrates how to implement 20+ algorithmic trading strategies
 
 Some of the codes are still in development and not fully clean or functional at the moment, but I am actively working on updates and improvements.
 
+For example, use a Triple RSI Rotation strategy to manage a stock portfolio.
+![Demo GIF](data/demo_bt.gif)
+
 ## Strategy overview 
 ### Single stock trading 
 - SMA (Niave SMA & Cross SMA)
