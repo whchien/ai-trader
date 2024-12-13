@@ -2,15 +2,15 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.pyc
+_data/
 
 # C extensions
 *.so
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -32,11 +32,13 @@ MANIFEST
 *.manifest
 *.spec
 
+.env
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# Unit tests / coverage reports
 htmlcov/
 .tox/
 .nox/
@@ -84,7 +86,7 @@ ipython_config.py
 
 # pyenv
 #   For a library or package, you might want to ignore these files since the code is
-#   intended to run in portfolio environments; otherwise, check them in:
+#   intended to run in multiple environments; otherwise, check them in:
 # .python-version
 
 # pipenv
@@ -153,13 +155,39 @@ dmypy.json
 cython_debug/
 
 # PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+.idea/
+
+#VSCode
+.vscode/*
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+.ionide
+
+Thumbs.db
+
+# Ignore cache folders
+**/.cache_prod/**
+**/.cache_dev/**
+
+# ignore .env folder due to sensitive passwords and etv
+**/envs/**
+
+# Do not ignore README.md in these folders
+!**/.cache_prod/README.md
+!**/.cache_dev/README.md
 
 
-.data/
-working_notebooks/
-log/
+# Do not ignore the .env for example
+!**/envs/example.env
+!**/envs/README.md
+
+# Ignore .ini files to prevent _migrations database secrets from being uploaded to the bitbucket
+**/*.ini
