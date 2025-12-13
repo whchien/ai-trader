@@ -1,6 +1,5 @@
 import backtrader as bt
 
-from ai_trader.trader import AITrader
 from ai_trader.backtesting.strategies.base import BaseStrategy
 from ai_trader.backtesting.strategies.indicators import TripleRSI
 
@@ -76,8 +75,16 @@ class TripleRsiStrategy(BaseStrategy):
                 self.entry_date = None
 
 
-if __name__ == "__main__":
-    trader = AITrader()
-    trader.add_strategy(TripleRsiStrategy)
-    trader.run()
-    trader.plot()
+if __main__ == "__main__":
+    from ai_trader.utils.backtest import run_backtest
+
+    # Run backtest with TripleRsiStrategy
+    results = run_backtest(
+        strategy=TripleRsiStrategy,
+        data_source=None,  # Use example data
+        cash=1000000,
+        commission=0.001425,
+    )
+
+    print("
+Backtest completed! Use cerebro.plot() to visualize results.")

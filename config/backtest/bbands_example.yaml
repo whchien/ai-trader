@@ -1,0 +1,27 @@
+# Example configuration for Bollinger Bands strategy backtest
+
+broker:
+  cash: 500000
+  commission: 0.001  # US stock commission rate
+
+data:
+  file: "data/AAPL.csv"
+  start_date: "2019-01-01"
+  end_date: "2024-12-31"
+  date_col: "Date"
+
+strategy:
+  class: "BBandsStrategy"
+  params:
+    period: 20  # Bollinger Bands period
+    devfactor: 2.0  # Standard deviation factor
+
+sizer:
+  type: "percent"
+  params:
+    percents: 90
+
+analyzers:
+  - sharpe
+  - drawdown
+  - returns

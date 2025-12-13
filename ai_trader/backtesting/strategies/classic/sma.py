@@ -1,6 +1,5 @@
 import backtrader as bt
 
-from ai_trader.trader import AITrader
 from ai_trader.backtesting.strategies.base import BaseStrategy
 
 
@@ -48,7 +47,15 @@ class CrossSMAStrategy(BaseStrategy):
 
 
 if __name__ == "__main__":
-    trader = AITrader()
-    trader.add_strategy(CrossSMAStrategy)
-    trader.run()
-    trader.plot()
+    from ai_trader.utils.backtest import run_backtest
+
+    # Run backtest with CrossSMAStrategy
+    results = run_backtest(
+        strategy=CrossSMAStrategy,
+        data_source=None,  # Use example data
+        cash=1000000,
+        commission=0.001425,
+        strategy_params={"fast": 5, "slow": 37},
+    )
+
+    print("\nBacktest completed! Use cerebro.plot() to visualize results.")

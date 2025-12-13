@@ -1,0 +1,29 @@
+# Example configuration for crypto (Bitcoin) strategy backtest
+
+broker:
+  cash: 100000
+  commission: 0.001  # Crypto exchange fee
+
+data:
+  file: "data/BTC-USD.csv"
+  start_date: "2020-01-01"
+  end_date: "2024-12-31"
+  date_col: "Date"
+
+strategy:
+  class: "RSIStrategy"  # RSI strategy works well for crypto
+  params:
+    rsi_period: 14
+    oversold: 30  # Buy when RSI < 30
+    overbought: 70  # Sell when RSI > 70
+
+sizer:
+  type: "percent"
+  params:
+    percents: 90  # Use 90% of capital
+
+analyzers:
+  - sharpe
+  - drawdown
+  - returns
+  - trades

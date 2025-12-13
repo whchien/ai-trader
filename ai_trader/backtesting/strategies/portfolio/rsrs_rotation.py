@@ -1,5 +1,4 @@
 from ai_trader.backtesting.strategies.indicators import RSRS
-from ai_trader.trader import AITrader
 from ai_trader.backtesting.strategies.base import BaseStrategy
 
 
@@ -57,8 +56,16 @@ class RSRSRotationStrategy(BaseStrategy):
             self.order_target_percent(data, weight)
 
 
-if __name__ == "__main__":
-    trader = AITrader()
-    trader.add_strategy(RSRSRotationStrategy)
-    trader.run()
-    trader.plot()
+if __main__ == "__main__":
+    from ai_trader.utils.backtest import run_backtest
+
+    # Run backtest with RSRSRotationStrategy
+    results = run_backtest(
+        strategy=RSRSRotationStrategy,
+        data_source=None,  # Use example data
+        cash=1000000,
+        commission=0.001425,
+    )
+
+    print("
+Backtest completed! Use cerebro.plot() to visualize results.")

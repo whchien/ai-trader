@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "Will Chien", email = "your.email@example.com"}
+    {name = "Will Chien"}
 ]
 keywords = ["trading", "backtesting", "algorithmic-trading", "finance", "backtrader", "technical-analysis"]
 classifiers = [
@@ -67,9 +67,6 @@ notebook = [
     "nbval>=0.10.0",
     "ipykernel>=6.25.0",
 ]
-all = [
-    "ai-trader[dev,docs,notebook]",
-]
 
 [project.urls]
 Homepage = "https://github.com/whchien/ai-trader"
@@ -77,8 +74,8 @@ Documentation = "https://ai-trader.readthedocs.io"
 Repository = "https://github.com/whchien/ai-trader"
 Issues = "https://github.com/whchien/ai-trader/issues"
 
-[tool.setuptools]
-packages = ["ai_trader"]
+[project.scripts]
+ai-trader = "ai_trader.cli:cli"
 
 [tool.setuptools.packages.find]
 where = ["."]

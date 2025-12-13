@@ -1,4 +1,3 @@
-from ai_trader.trader import AITrader
 from ai_trader.backtesting.strategies.base import BaseStrategy
 
 
@@ -8,8 +7,16 @@ class BuyHoldStrategy(BaseStrategy):
             self.buy()
 
 
-if __name__ == "__main__":
-    trader = AITrader()
-    trader.add_strategy(BuyHoldStrategy)
-    trader.run()
-    trader.plot()
+if __main__ == "__main__":
+    from ai_trader.utils.backtest import run_backtest
+
+    # Run backtest with BuyHoldStrategy
+    results = run_backtest(
+        strategy=BuyHoldStrategy,
+        data_source=None,  # Use example data
+        cash=1000000,
+        commission=0.001425,
+    )
+
+    print("
+Backtest completed! Use cerebro.plot() to visualize results.")

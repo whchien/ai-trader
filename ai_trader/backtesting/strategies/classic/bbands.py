@@ -1,6 +1,5 @@
 import backtrader as bt
 
-from ai_trader.trader import AITrader
 from ai_trader.backtesting.strategies.base import BaseStrategy
 
 
@@ -26,7 +25,15 @@ class BBandsStrategy(BaseStrategy):
 
 
 if __name__ == "__main__":
-    trader = AITrader()
-    trader.add_strategy(BBandsStrategy)
-    trader.run()
-    trader.plot()
+    from ai_trader.utils.backtest import run_backtest
+
+    # Run backtest with Bollinger Bands strategy
+    results = run_backtest(
+        strategy=BBandsStrategy,
+        data_source=None,  # Use example data
+        cash=1000000,
+        commission=0.001425,
+        strategy_params={"period": 20, "devfactor": 2.0},
+    )
+
+    print("\nBacktest completed! Use cerebro.plot() to visualize results.")

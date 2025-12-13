@@ -25,7 +25,7 @@ class BitcoinDataFetcher:
     """
     Fetches Bitcoin (BTC-USD) market data from Yahoo Finance with retry logic.
 
-    Similar to MarketDataFetcher but specialized for Bitcoin/cryptocurrency data
+    Similar to USStockFetcher but specialized for Bitcoin/cryptocurrency data
     with additional validation for crypto-specific characteristics.
 
     Attributes:
@@ -42,10 +42,9 @@ class BitcoinDataFetcher:
         ...     start_date="2020-01-01",
         ...     end_date="2024-12-31"
         ... )
-        >>> df = fetcher.fetch_bitcoin_data()
-        >>> if df is not None:
-        ...     metrics = fetcher.calculate_volatility_metrics(df)
-        ...     print(f"Volatility: {metrics['annualized_volatility']:.2f}%")
+        >>> df = fetcher.fetch()
+        >>> metrics = fetcher.calculate_volatility_metrics(df)
+        >>> print(f"Volatility: {metrics['annualized_volatility']:.2f}%")
     """
 
     DEFAULT_TICKER = "BTC-USD"
@@ -82,20 +81,21 @@ class BitcoinDataFetcher:
             f"from {start_date or 'earliest'} to {end_date or 'latest'}"
         )
 
-    def fetch_bitcoin_data(self) -> Optional[pd.DataFrame]:
+    def fetch(self) -> pd.DataFrame:
         """
         Fetch Bitcoin data with retry logic and exponential backoff.
 
         Returns:
-            DataFrame with Bitcoin OHLCV data, or None if fetch fails
-            Columns: Date (index), Open, High, Low, Close, Adj Close, Volume
+            DataFrame with Bitcoin OHLCV data (lowercase columns)
+            Index: DatetimeIndex named 'date'
+            Columns: ['open', 'high', 'low', 'close', 'volume', 'adj_close'] (lowercase)
 
         Raises:
             DataFetchError: If all retry attempts fail
 
         Example:
             >>> fetcher = BitcoinDataFetcher(start_date="2024-01-01")
-            >>> df = fetcher.fetch_bitcoin_data()
+            >>> df = fetcher.fetch()
             >>> print(f"Fetched {len(df)} rows")
         """
         logger.info(f"Fetching data for {self.ticker}...")
@@ -140,8 +140,11 @@ class BitcoinDataFetcher:
                     f"(attempt {attempt}/{self.max_retries})"
                 )
 
-                # Ensure the index is named 'Date'
-                df.index.name = 'Date'
+                # Normalize columns to lowercase
+                df.columns = df.columns.str.lower()
+
+                # Ensure the index is named 'date' (lowercase)
+                df.index.name = 'date'
 
                 return df
 
@@ -227,14 +230,14 @@ class BitcoinDataFetcher:
 
         validation_issues = []
 
-        # 1. Check for required columns
-        required_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+        # 1. Check for required columns (lowercase)
+        required_columns = ['open', 'high', 'low', 'close', 'volume']
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
             validation_issues.append(f"Missing required columns: {missing_columns}")
 
         # 2. Check price positivity
-        price_columns = ['Open', 'High', 'Low', 'Close']
+        price_columns = ['open', 'high', 'low', 'close']
         for col in price_columns:
             if col in df.columns:
                 negative_prices = (df[col] <= 0).sum()
@@ -244,42 +247,42 @@ class BitcoinDataFetcher:
                     )
 
         # 3. Check price range bounds
-        if 'High' in df.columns:
-            max_price = df['High'].max()
+        if 'high' in df.columns:
+            max_price = df['high'].max()
             if max_price > price_max:
                 validation_issues.append(
                     f"Maximum price {max_price:.2f} exceeds historical bound {price_max:.2f}"
                 )
 
-        if 'Low' in df.columns:
-            min_price = df['Low'].min()
+        if 'low' in df.columns:
+            min_price = df['low'].min()
             if min_price < price_min:
                 validation_issues.append(
                     f"Minimum price {min_price:.2f} below historical bound {price_min:.2f}"
                 )
 
         # 4. Check for zero-volume days
-        if 'Volume' in df.columns:
-            zero_volume_days = (df['Volume'] == 0).sum()
+        if 'volume' in df.columns:
+            zero_volume_days = (df['volume'] == 0).sum()
             if zero_volume_days > 0:
                 validation_issues.append(
                     f"Found {zero_volume_days} days with zero volume"
                 )
 
         # 5. Check OHLC consistency
-        if all(col in df.columns for col in ['Open', 'High', 'Low', 'Close']):
+        if all(col in df.columns for col in ['open', 'high', 'low', 'close']):
             # High should be >= Open, Close, Low
             high_violations = (
-                (df['High'] < df['Open']) |
-                (df['High'] < df['Close']) |
-                (df['High'] < df['Low'])
+                (df['high'] < df['open']) |
+                (df['high'] < df['close']) |
+                (df['high'] < df['low'])
             ).sum()
 
             # Low should be <= Open, Close, High
             low_violations = (
-                (df['Low'] > df['Open']) |
-                (df['Low'] > df['Close']) |
-                (df['Low'] > df['High'])
+                (df['low'] > df['open']) |
+                (df['low'] > df['close']) |
+                (df['low'] > df['high'])
             ).sum()
 
             if high_violations > 0:
@@ -292,8 +295,8 @@ class BitcoinDataFetcher:
                 )
 
         # 6. Check daily price changes
-        if 'Close' in df.columns:
-            daily_returns = df['Close'].pct_change() * 100
+        if 'close' in df.columns:
+            daily_returns = df['close'].pct_change() * 100
             extreme_moves = daily_returns[abs(daily_returns) > max_daily_change_pct]
 
             if len(extreme_moves) > 0:
@@ -339,17 +342,17 @@ class BitcoinDataFetcher:
 
         Example:
             >>> fetcher = BitcoinDataFetcher()
-            >>> df = fetcher.fetch_bitcoin_data()
+            >>> df = fetcher.fetch()
             >>> metrics = fetcher.calculate_volatility_metrics(df)
             >>> print(f"Ann. Volatility: {metrics['annualized_volatility']:.2f}%")
             >>> print(f"Max Drawdown: {metrics['max_drawdown']:.2f}%")
         """
-        if df.empty or 'Close' not in df.columns:
+        if df.empty or 'close' not in df.columns:
             logger.warning("Cannot calculate volatility metrics: insufficient data")
             return {}
 
         # Calculate daily returns
-        daily_returns = df['Close'].pct_change().dropna()
+        daily_returns = df['close'].pct_change().dropna()
 
         # Daily volatility
         daily_vol = daily_returns.std() * 100  # as percentage
@@ -396,7 +399,7 @@ class BitcoinDataFetcher:
 
         Example:
             >>> fetcher = BitcoinDataFetcher()
-            >>> df = fetcher.fetch_bitcoin_data()
+            >>> df = fetcher.fetch()
             >>> summary = fetcher.get_data_summary(df)
             >>> print(f"Total Return: {summary['total_return_pct']:.2f}%")
             >>> print(f"Price Range: ${summary['price_range']['lowest']:.0f} - "
@@ -422,26 +425,26 @@ class BitcoinDataFetcher:
         }
 
         # Price statistics
-        if all(col in df.columns for col in ['High', 'Low', 'Close']):
+        if all(col in df.columns for col in ['high', 'low', 'close']):
             summary["price_range"] = {
-                "highest": float(df['High'].max()),
-                "lowest": float(df['Low'].min()),
-                "latest_close": float(df['Close'].iloc[-1]),
-                "first_close": float(df['Close'].iloc[0])
+                "highest": float(df['high'].max()),
+                "lowest": float(df['low'].min()),
+                "latest_close": float(df['close'].iloc[-1]),
+                "first_close": float(df['close'].iloc[0])
             }
 
             # Calculate total return
             total_return = (
-                (df['Close'].iloc[-1] - df['Close'].iloc[0]) / df['Close'].iloc[0]
+                (df['close'].iloc[-1] - df['close'].iloc[0]) / df['close'].iloc[0]
             ) * 100
             summary["total_return_pct"] = round(total_return, 2)
 
         # Volume statistics
-        if 'Volume' in df.columns:
+        if 'volume' in df.columns:
             summary["volume"] = {
-                "mean": float(df['Volume'].mean()),
-                "median": float(df['Volume'].median()),
-                "max": float(df['Volume'].max())
+                "mean": float(df['volume'].mean()),
+                "median": float(df['volume'].median()),
+                "max": float(df['volume'].max())
             }
 
         # Volatility metrics
@@ -472,11 +475,11 @@ class CryptoDataFetcher(BitcoinDataFetcher):
         ...     ticker="ETH-USD",
         ...     start_date="2023-01-01"
         ... )
-        >>> eth_data = eth_fetcher.fetch_bitcoin_data()  # Works for any crypto
+        >>> eth_data = eth_fetcher.fetch()  # Works for any crypto
         >>>
         >>> # Fetch Solana data
         >>> sol_fetcher = CryptoDataFetcher(ticker="SOL-USD")
-        >>> sol_data = sol_fetcher.fetch_bitcoin_data()
+        >>> sol_data = sol_fetcher.fetch()
     """
 
     def __init__(self, ticker: str, **kwargs):
@@ -501,20 +504,19 @@ class CryptoDataFetcher(BitcoinDataFetcher):
 if __name__ == "__main__":
     # Example usage
     fetcher = BitcoinDataFetcher(start_date="2024-01-01", end_date="2024-12-31")
-    df = fetcher.fetch_bitcoin_data()
+    df = fetcher.fetch()
 
-    if df is not None:
-        print(f"\nFetched {len(df)} rows of Bitcoin data")
-        print(f"\nData Summary:")
-        summary = fetcher.get_data_summary(df)
-        print(f"Date Range: {summary['date_range']['start']} to {summary['date_range']['end']}")
-        print(f"Price Range: ${summary['price_range']['lowest']:.2f} - ${summary['price_range']['highest']:.2f}")
-        print(f"Total Return: {summary['total_return_pct']:.2f}%")
-        print(f"\nVolatility Metrics:")
-        print(f"  Daily Volatility: {summary['volatility']['daily_volatility']:.2f}%")
-        print(f"  Annualized Volatility: {summary['volatility']['annualized_volatility']:.2f}%")
-        print(f"  Max Drawdown: {summary['volatility']['max_drawdown']:.2f}%")
+    print(f"\nFetched {len(df)} rows of Bitcoin data")
+    print(f"\nData Summary:")
+    summary = fetcher.get_data_summary(df)
+    print(f"Date Range: {summary['date_range']['start']} to {summary['date_range']['end']}")
+    print(f"Price Range: ${summary['price_range']['lowest']:.2f} - ${summary['price_range']['highest']:.2f}")
+    print(f"Total Return: {summary['total_return_pct']:.2f}%")
+    print(f"\nVolatility Metrics:")
+    print(f"  Daily Volatility: {summary['volatility']['daily_volatility']:.2f}%")
+    print(f"  Annualized Volatility: {summary['volatility']['annualized_volatility']:.2f}%")
+    print(f"  Max Drawdown: {summary['volatility']['max_drawdown']:.2f}%")
 
-        # Validate the data
-        is_valid = fetcher.validate_bitcoin_data(df)
-        print(f"\nData Validation: {'PASSED' if is_valid else 'FAILED'}")
+    # Validate the data
+    is_valid = fetcher.validate_bitcoin_data(df)
+    print(f"\nData Validation: {'PASSED' if is_valid else 'FAILED'}")

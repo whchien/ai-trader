@@ -22,17 +22,15 @@ class BaseFetcher(ABC):
     """Abstract base class for data fetchers."""
 
     @abstractmethod
-    def fetch(self, symbol: str, start_date: str, end_date: Optional[str] = None) -> pd.DataFrame:
+    def fetch(self) -> pd.DataFrame:
         """
-        Fetch market data for a single symbol.
-
-        Args:
-            symbol: Stock symbol/ticker
-            start_date: Start date for data
-            end_date: Optional end date
+        Fetch market data.
 
         Returns:
-            DataFrame with OHLCV data
+            DataFrame with standardized OHLCV data:
+            - Index: DatetimeIndex named 'date'
+            - Columns: ['open', 'high', 'low', 'close', 'volume'] (lowercase)
+            - All column names MUST be lowercase
 
         Raises:
             DataFetchError: If fetching fails
@@ -40,120 +38,40 @@ class BaseFetcher(ABC):
         """
         pass
 
-
-class MarketDataFetcher(BaseFetcher):
-    """
-    Fetches market data from yfinance (US) or twstock (TW).
-
-    This class downloads stock market data and saves it to CSV files.
-    Supports both US and Taiwan markets.
-
-    Attributes:
-        stocks: List of stock symbols to fetch
-        market: Market type ('us' or 'tw')
-        start_ym: Start year and month as tuple (year, month)
-        save_dir: Directory to save CSV files
-
-    Example:
-        >>> fetcher = MarketDataFetcher(
-        ...     stocks=["AAPL", "MSFT"],
-        ...     market="us",
-        ...     start_ym=(2020, 1),
-        ...     save_dir="./data/us_stock/"
-        ... )
-        >>> fetcher.run()
-    """
-
-    def __init__(
-        self,
-        stocks: List[str],
-        market: Literal["us", "tw"] = "tw",
-        start_ym: Tuple[int, int] = (2024, 1),
-        save_dir: str = "./data/tw_stock/",
-    ):
-        if market not in ["us", "tw"]:
-            raise ConfigurationError(
-                f"Invalid market '{market}'. Must be 'us' or 'tw'",
-                field="market"
-            )
-
-        self.stocks = stocks
-        self.market = market
-        self.start_ym = start_ym
-        self.save_dir = Path(save_dir)
-        self.save_dir.mkdir(parents=True, exist_ok=True)
-
-        logger.info(
-            f"Initialized MarketDataFetcher: market={market}, "
-            f"stocks={len(stocks)}, start={start_ym}"
-        )
-
-    def fetch(self, symbol: str, start_date: str, end_date: Optional[str] = None) -> pd.DataFrame:
+    def _normalize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Fetch data for a single symbol.
+        Normalize column names to lowercase standard.
 
         Args:
-            symbol: Stock symbol
-            start_date: Start date (YYYY-MM-DD format)
-            end_date: Optional end date
+            df: DataFrame with any case columns
 
         Returns:
-            DataFrame with OHLCV data
-
-        Raises:
-            DataFetchError: If fetching fails
-            DataValidationError: If data is invalid
+            DataFrame with lowercase column names and date index
         """
-        logger.info(f"Fetching data for {symbol} from {start_date}")
+        # Rename columns to lowercase
+        df.columns = df.columns.str.lower()
 
-        try:
-            if self.market == "us":
-                df = yf.download(symbol, start=start_date, end=end_date, progress=False)
-                df = df.reset_index()
-            elif self.market == "tw":
-                year, month = self.start_ym
-                stock = Stock(symbol)
-                stock.fetch_from(year=year, month=month)
+        # Handle common variations
+        column_mapping = {
+            'adj close': 'adj_close',
+            'capacity': 'volume'  # TW stock uses 'capacity'
+        }
+        df = df.rename(columns=column_mapping)
 
-                if not stock.data:
-                    raise DataFetchError(
-                        f"No data returned for {symbol}",
-                        symbol=symbol,
-                        source="twstock"
-                    )
+        # Ensure date is in the index
+        if 'date' in df.columns:
+            df['date'] = pd.to_datetime(df['date'])
+            df = df.set_index('date')
 
-                data_dicts = [d._asdict() for d in stock.data]
-                df = pd.DataFrame(data_dicts)
-                df = df[["date", "open", "high", "low", "close", "capacity"]]
-                df = df.rename({"capacity": "volume"}, axis=1)
-            else:
-                raise ConfigurationError(
-                    f"Invalid market: {self.market}",
-                    field="market"
-                )
+        # Ensure index is named 'date'
+        if df.index.name is None or df.index.name != 'date':
+            df.index.name = 'date'
 
-            # Validate the data
-            self._validate_dataframe(df, symbol)
-            return df
-
-        except (ConnectionError, TimeoutError) as e:
-            raise DataFetchError(
-                f"Network error fetching {symbol}: {e}",
-                symbol=symbol,
-                source=self.market
-            ) from e
-        except Exception as e:
-            if isinstance(e, (DataFetchError, DataValidationError, ConfigurationError)):
-                raise
-            raise DataFetchError(
-                f"Failed to fetch {symbol}: {e}",
-                symbol=symbol,
-                source=self.market
-            ) from e
+        return df
 
     def _validate_dataframe(self, df: pd.DataFrame, symbol: str) -> None:
         """
-        Validate that the DataFrame has required columns and data.
+        Validate that DataFrame has required columns and data.
 
         Args:
             df: DataFrame to validate
@@ -168,10 +86,10 @@ class MarketDataFetcher(BaseFetcher):
                 symbol=symbol
             )
 
-        # Check for required columns (case-insensitive)
-        df_cols_lower = [col.lower() for col in df.columns]
-        required = ["open", "high", "low", "close", "volume"]
-        missing = [col for col in required if col not in df_cols_lower]
+        # Check for required columns
+        required = ['open', 'high', 'low', 'close', 'volume']
+        df_cols = [col.lower() for col in df.columns]
+        missing = [col for col in required if col not in df_cols]
 
         if missing:
             raise DataValidationError(
@@ -182,60 +100,247 @@ class MarketDataFetcher(BaseFetcher):
 
         logger.debug(f"Validated data for {symbol}: {len(df)} rows")
 
-    def save_one_stock_to_csv(self, stock_id: str) -> None:
+
+class USStockFetcher(BaseFetcher):
+    """
+    Fetches US stock market data from Yahoo Finance.
+
+    Uses yfinance to download historical OHLCV data for US stocks.
+
+    Attributes:
+        symbol: Stock ticker symbol (e.g., 'AAPL', 'MSFT', '^GSPC')
+        start_date: Start date in YYYY-MM-DD format
+        end_date: End date in YYYY-MM-DD format (None = today)
+
+    Example:
+        >>> fetcher = USStockFetcher(
+        ...     symbol="AAPL",
+        ...     start_date="2020-01-01",
+        ...     end_date="2024-12-31"
+        ... )
+        >>> df = fetcher.fetch()
+        >>> print(df.head())
+    """
+
+    def __init__(
+        self,
+        symbol: str,
+        start_date: str,
+        end_date: Optional[str] = None
+    ):
         """
-        Fetch and save data for a single stock.
+        Initialize US stock data fetcher.
 
         Args:
-            stock_id: Stock symbol/ID
+            symbol: Stock ticker symbol
+            start_date: Start date (YYYY-MM-DD)
+            end_date: End date (YYYY-MM-DD), defaults to today
 
         Raises:
-            DataFetchError: If fetching fails
+            ValueError: If date format is invalid
         """
-        logger.info(f"Processing: {stock_id}")
-
-        try:
-            start_date = f"{self.start_ym[0]:04d}-{self.start_ym[1]:02d}-01"
-            df = self.fetch(stock_id, start_date)
-
-            filepath = self.save_dir / f"{stock_id}.csv"
-            df.to_csv(filepath, index=False)
-            logger.info(f"Saved: {filepath}")
-
-        except (DataFetchError, DataValidationError) as e:
-            logger.error(f"Failed to process {stock_id}: {e}")
-            raise
-
-    def run(self) -> None:
-        """
-        Fetch and save data for all stocks concurrently.
-
-        Uses ThreadPoolExecutor for parallel downloads.
-        """
-        logger.info(f"Starting data fetch for {len(self.stocks)} stocks")
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            futures = {
-                executor.submit(self.save_one_stock_to_csv, stock_id): stock_id
-                for stock_id in self.stocks
-            }
-
-            completed = 0
-            failed = 0
-
-            for future in concurrent.futures.as_completed(futures):
-                stock_id = futures[future]
-                try:
-                    future.result()
-                    completed += 1
-                except Exception as e:
-                    logger.error(f"Error fetching {stock_id}: {e}")
-                    failed += 1
+        self.symbol = symbol
+        self.start_date = start_date
+        self.end_date = end_date
 
         logger.info(
-            f"Finished: {completed} succeeded, {failed} failed "
-            f"out of {len(self.stocks)} total"
+            f"Initialized USStockFetcher: symbol={symbol}, "
+            f"start={start_date}, end={end_date or 'today'}"
         )
+
+    def fetch(self) -> pd.DataFrame:
+        """
+        Fetch US stock data from Yahoo Finance.
+
+        Returns:
+            DataFrame with lowercase columns: ['open', 'high', 'low', 'close', 'volume']
+            Index: DatetimeIndex named 'date'
+
+        Raises:
+            DataFetchError: If download fails
+            DataValidationError: If data is invalid
+        """
+        logger.info(f"Fetching US stock data for {self.symbol}")
+
+        try:
+            # Download from yfinance
+            df = yf.download(
+                self.symbol,
+                start=self.start_date,
+                end=self.end_date,
+                progress=False,
+                auto_adjust=False  # Keep both Close and Adj Close
+            )
+
+            if df.empty:
+                raise DataFetchError(
+                    f"No data returned for {self.symbol}",
+                    symbol=self.symbol,
+                    source="yfinance"
+                )
+
+            # Reset index to make Date a column
+            df = df.reset_index()
+
+            # Normalize columns (yfinance returns: Date, Open, High, Low, Close, Adj Close, Volume)
+            # We want: date (index), open, high, low, close, volume, adj_close
+            df = self._normalize_columns(df)
+
+            # Validate required columns exist
+            self._validate_dataframe(df, self.symbol)
+
+            logger.info(
+                f"Successfully fetched {len(df)} rows for {self.symbol} "
+                f"from {df.index[0]} to {df.index[-1]}"
+            )
+
+            return df
+
+        except (ConnectionError, TimeoutError) as e:
+            raise DataFetchError(
+                f"Network error fetching {self.symbol}: {e}",
+                symbol=self.symbol,
+                source="yfinance"
+            ) from e
+        except Exception as e:
+            if isinstance(e, (DataFetchError, DataValidationError)):
+                raise
+            raise DataFetchError(
+                f"Failed to fetch {self.symbol}: {e}",
+                symbol=self.symbol,
+                source="yfinance"
+            ) from e
+
+
+class TWStockFetcher(BaseFetcher):
+    """
+    Fetches Taiwan stock market data from twstock library.
+
+    Uses twstock to download historical OHLCV data for Taiwan stocks.
+
+    Attributes:
+        symbol: Stock ID (e.g., '2330' for TSMC)
+        start_date: Start date in YYYY-MM-DD format
+        end_date: End date (not used by twstock, included for API consistency)
+
+    Note:
+        twstock fetches from start_date to present. The end_date parameter
+        is accepted for API consistency but will be used to filter results.
+
+    Example:
+        >>> fetcher = TWStockFetcher(
+        ...     symbol="2330",
+        ...     start_date="2020-01-01"
+        ... )
+        >>> df = fetcher.fetch()
+        >>> print(df.head())
+    """
+
+    def __init__(
+        self,
+        symbol: str,
+        start_date: str,
+        end_date: Optional[str] = None
+    ):
+        """
+        Initialize Taiwan stock data fetcher.
+
+        Args:
+            symbol: Stock ID (e.g., '2330')
+            start_date: Start date (YYYY-MM-DD)
+            end_date: End date (YYYY-MM-DD), used for filtering
+
+        Raises:
+            ValueError: If date format is invalid
+        """
+        self.symbol = symbol
+        self.start_date = start_date
+        self.end_date = end_date
+
+        # Parse start_date to get year and month for twstock
+        try:
+            from datetime import datetime
+            dt = datetime.strptime(start_date, "%Y-%m-%d")
+            self.start_year = dt.year
+            self.start_month = dt.month
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid start_date format: {start_date}. Expected YYYY-MM-DD"
+            ) from e
+
+        logger.info(
+            f"Initialized TWStockFetcher: symbol={symbol}, "
+            f"start={start_date}, end={end_date or 'present'}"
+        )
+
+    def fetch(self) -> pd.DataFrame:
+        """
+        Fetch Taiwan stock data from twstock.
+
+        Returns:
+            DataFrame with lowercase columns: ['open', 'high', 'low', 'close', 'volume']
+            Index: DatetimeIndex named 'date'
+
+        Raises:
+            DataFetchError: If download fails
+            DataValidationError: If data is invalid
+        """
+        logger.info(f"Fetching TW stock data for {self.symbol}")
+
+        try:
+            # Fetch from twstock
+            stock = Stock(self.symbol)
+            stock.fetch_from(year=self.start_year, month=self.start_month)
+
+            if not stock.data:
+                raise DataFetchError(
+                    f"No data returned for {self.symbol}",
+                    symbol=self.symbol,
+                    source="twstock"
+                )
+
+            # Convert to DataFrame
+            data_dicts = [d._asdict() for d in stock.data]
+            df = pd.DataFrame(data_dicts)
+
+            # twstock returns: date, capacity, turnover, open, high, low, close, change, transaction
+            # We want: date (index), open, high, low, close, volume
+            df = df[["date", "open", "high", "low", "close", "capacity"]]
+            df = df.rename(columns={"capacity": "volume"})
+
+            # Set date as index
+            df['date'] = pd.to_datetime(df['date'])
+            df = df.set_index('date')
+
+            # Filter by end_date if provided
+            if self.end_date:
+                end_dt = pd.to_datetime(self.end_date)
+                df = df[df.index <= end_dt]
+
+            # Validate
+            self._validate_dataframe(df, self.symbol)
+
+            logger.info(
+                f"Successfully fetched {len(df)} rows for {self.symbol} "
+                f"from {df.index[0]} to {df.index[-1]}"
+            )
+
+            return df
+
+        except (ConnectionError, TimeoutError) as e:
+            raise DataFetchError(
+                f"Network error fetching {self.symbol}: {e}",
+                symbol=self.symbol,
+                source="twstock"
+            ) from e
+        except Exception as e:
+            if isinstance(e, (DataFetchError, DataValidationError)):
+                raise
+            raise DataFetchError(
+                f"Failed to fetch {self.symbol}: {e}",
+                symbol=self.symbol,
+                source="twstock"
+            ) from e
 
 
 def load_example(market: Literal["us", "tw"] = "tw") -> pd.DataFrame:
@@ -264,7 +369,8 @@ def load_example(market: Literal["us", "tw"] = "tw") -> pd.DataFrame:
     if market not in datapath:
         raise ValueError(f"Market only supports 'tw' or 'us', got '{market}'")
 
-    date_col = "date" if market == "tw" else "Date"
+    # Both markets now use lowercase 'date' column
+    date_col = "date"
     file_path = Path(datapath[market])
 
     if not file_path.exists():
@@ -278,14 +384,3 @@ def load_example(market: Literal["us", "tw"] = "tw") -> pd.DataFrame:
 
     logger.info(f"Loaded example data for {market} market: {len(df)} rows")
     return df
-
-
-if __name__ == "__main__":
-    # Example usage
-    fetcher = MarketDataFetcher(
-        stocks=["2330"],
-        market="tw",
-        start_ym=(2019, 1),
-        save_dir="./data/tw_stock/"
-    )
-    fetcher.run()

@@ -1,23 +1,34 @@
+import backtrader as bt
 import glob
 import os
+import pandas as pd
 import warnings
 from pathlib import Path
 from typing import Optional, List, Type, Union
 
-import backtrader as bt
-import pandas as pd
-
-from ai_trader.data.fetchers.base import load_example
 from ai_trader.core.logging import get_logger
-from ai_trader.core.exceptions import StrategyError
 from ai_trader.core.utils import extract_ticker_from_path
+from ai_trader.data.fetchers.base import load_example
 
 logger = get_logger(__name__)
 
 
 class AITrader:
     """
-    AITrader is a wrapper for Backtrader functions, designed to accelerate the strategy development process.
+    AITrader is a wrapper for Backtrader functions.
+
+    .. deprecated:: 0.2.0
+        AITrader is deprecated and will be removed in version 0.3.0.
+        Use the utility functions in `ai_trader.utils.backtest` instead:
+
+        - `run_backtest()` for quick backtests
+        - `create_cerebro()`, `add_stock_data()`, etc. for step-by-step control
+        - CLI tool: `ai-trader run config.yaml` for config-driven backtests
+
+        See examples in `scripts/examples/` and docs for migration guide.
+
+    This class still works but adds unnecessary abstraction over Backtrader.
+    Direct Backtrader usage with utility functions is recommended.
     """
 
     def __init__(
@@ -32,6 +43,9 @@ class AITrader:
         """
         Initializes the AITrader with the given parameters.
 
+        .. deprecated:: 0.2.0
+            Use `ai_trader.utils.backtest.run_backtest()` or utility functions instead.
+
         Args:
             strategy: Strategy class (optional)
             cash: Initial cash amount
@@ -40,6 +54,15 @@ class AITrader:
             end_date: End date for backtest (YYYY-MM-DD)
             data_dir: Directory for loading portfolio data
         """
+        # Emit deprecation warning
+        warnings.warn(
+            "AITrader is deprecated and will be removed in v0.3.0. "
+            "Use ai_trader.utils.backtest functions instead. "
+            "See scripts/examples/ for migration examples.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         self.cash = cash
         self.commission = commission
         self.start_date = start_date
@@ -54,7 +77,10 @@ class AITrader:
         self._sizer_configured = False
         self._analyzers_configured = False
 
-        logger.info(f"Initialized AITrader: cash=${cash:,}, commission={commission:.4f}")
+        logger.warning(
+            f"AITrader is deprecated. Consider using ai_trader.utils.backtest instead. "
+            f"Initialized: cash=${cash:,}, commission={commission:.4f}"
+        )
 
     def log(self, txt: str) -> None:
         """

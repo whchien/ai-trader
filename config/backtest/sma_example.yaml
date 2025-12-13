@@ -1,0 +1,28 @@
+# Example configuration for SMA (Simple Moving Average) strategy backtest
+
+broker:
+  cash: 1000000
+  commission: 0.001425  # Taiwan stock commission rate
+
+data:
+  file: "data/example.csv"  # Path to single stock CSV file
+  start_date: "2020-01-01"
+  end_date: "2023-12-31"
+  date_col: "date"  # Column name for date (use "Date" for US stocks)
+
+strategy:
+  class: "SMAStrategy"  # Strategy class name
+  params:
+    fast_period: 10  # Fast moving average period
+    slow_period: 30  # Slow moving average period
+
+sizer:
+  type: "percent"
+  params:
+    percents: 95  # Use 95% of available capital per trade
+
+analyzers:
+  - sharpe
+  - drawdown
+  - returns
+  - trades

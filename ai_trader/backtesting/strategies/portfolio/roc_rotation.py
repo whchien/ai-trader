@@ -1,6 +1,5 @@
 import backtrader as bt
 
-from ai_trader.trader import AITrader
 from ai_trader.backtesting.strategies.base import BaseStrategy
 
 
@@ -56,8 +55,16 @@ class ROCRotationStrategy(BaseStrategy):
                 self.order_target_percent(p, target=weight * 0.95)
 
 
-if __name__ == "__main__":
-    trader = AITrader()
-    trader.add_strategy(ROCRotationStrategy)
-    trader.run()
-    trader.plot()
+if __main__ == "__main__":
+    from ai_trader.utils.backtest import run_backtest
+
+    # Run backtest with ROCRotationStrategy
+    results = run_backtest(
+        strategy=ROCRotationStrategy,
+        data_source=None,  # Use example data
+        cash=1000000,
+        commission=0.001425,
+    )
+
+    print("
+Backtest completed! Use cerebro.plot() to visualize results.")

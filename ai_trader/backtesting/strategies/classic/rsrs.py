@@ -1,4 +1,3 @@
-from ai_trader.trader import AITrader
 from ai_trader.backtesting.strategies.base import BaseStrategy
 from ai_trader.backtesting.strategies.indicators import RSRS
 
@@ -25,8 +24,16 @@ class RSRSStrategy(BaseStrategy):
                 self.close()
 
 
-if __name__ == "__main__":
-    trader = AITrader()
-    trader.add_strategy(RSRSStrategy)
-    trader.run()
-    trader.plot()
+if __main__ == "__main__":
+    from ai_trader.utils.backtest import run_backtest
+
+    # Run backtest with RSRSStrategy
+    results = run_backtest(
+        strategy=RSRSStrategy,
+        data_source=None,  # Use example data
+        cash=1000000,
+        commission=0.001425,
+    )
+
+    print("
+Backtest completed! Use cerebro.plot() to visualize results.")

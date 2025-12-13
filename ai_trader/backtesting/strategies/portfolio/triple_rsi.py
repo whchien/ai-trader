@@ -1,6 +1,5 @@
 import backtrader as bt
 
-from ai_trader.trader import AITrader
 from ai_trader.backtesting.strategies.base import BaseStrategy
 from ai_trader.backtesting.strategies.indicators import TripleRSI
 
@@ -113,8 +112,16 @@ class TripleRSIRotationStrategy(BaseStrategy):
         self.last_buy = to_buy  # Track last bought stocks
 
 
-if __name__ == "__main__":
-    trader = AITrader()
-    trader.add_strategy(TripleRSIRotationStrategy)
-    trader.run()
-    trader.plot()
+if __main__ == "__main__":
+    from ai_trader.utils.backtest import run_backtest
+
+    # Run backtest with TripleRSIRotationStrategy
+    results = run_backtest(
+        strategy=TripleRSIRotationStrategy,
+        data_source=None,  # Use example data
+        cash=1000000,
+        commission=0.001425,
+    )
+
+    print("
+Backtest completed! Use cerebro.plot() to visualize results.")

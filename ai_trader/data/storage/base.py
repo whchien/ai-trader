@@ -71,11 +71,16 @@ class FileManager:
         """
         Save DataFrame to CSV file.
 
+        Expected DataFrame format:
+        - Index: DatetimeIndex with dates (will be saved as first column)
+        - Columns: lowercase OHLCV columns ['open', 'high', 'low', 'close', 'volume']
+        - Optional additional columns (e.g., 'adj_close') are allowed
+
         Args:
             df: DataFrame containing market data
             ticker: Stock ticker symbol
-            start_date: Start date of data
-            end_date: End date of data
+            start_date: Start date of data (YYYY-MM-DD)
+            end_date: End date of data (YYYY-MM-DD)
             overwrite: Whether to overwrite existing file
 
         Returns:

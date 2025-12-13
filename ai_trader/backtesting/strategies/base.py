@@ -24,7 +24,7 @@ class BaseStrategy(bt.Strategy):
         if order.status == order.Completed:
             if order.isbuy():
                 self.log(
-                    f"[BUY]  Price: {order.executed.price:<10.2f} | "
+                    f"[BUY] Price: {order.executed.price:<10.2f} | "
                     f"Cost: {order.executed.value:<10.2f} | "
                     f"Comm: {order.executed.comm:<10.2f}"
                 )
