@@ -239,8 +239,16 @@ def fetch(
             click.echo("✗ No data returned", err=True)
             sys.exit(1)
 
+        # Create market-specific subdirectory
+        if market == "us":
+            market_dir = f"{output_dir}/us_stock"
+        elif market == "tw":
+            market_dir = f"{output_dir}/tw_stock"
+        else:
+            market_dir = output_dir
+
         # Save using FileManager
-        file_manager = FileManager(base_data_dir=output_dir)
+        file_manager = FileManager(base_data_dir=market_dir)
 
         # Determine actual end date for filename
         actual_end_date = end_date or df.index[-1].strftime("%Y-%m-%d")

@@ -43,6 +43,11 @@ class BaseFetcher(ABC):
         Returns:
             DataFrame with lowercase column names and date index
         """
+        # Handle MultiIndex columns (from yfinance when downloading single ticker)
+        if isinstance(df.columns, pd.MultiIndex):
+            # For single ticker, flatten to just the column names (first level)
+            df.columns = df.columns.get_level_values(0)
+
         # Rename columns to lowercase
         df.columns = df.columns.str.lower()
 

@@ -1,4 +1,5 @@
 from typing import Optional
+import warnings
 
 import pandas as pd
 from twstock import Stock
@@ -6,6 +7,9 @@ from twstock import Stock
 from ai_trader.core import DataFetchError, DataValidationError
 from ai_trader.data.fetchers import BaseFetcher
 from ai_trader.data.fetchers.base import logger
+
+# Disable SSL warnings when we bypass verification
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
 
 class TWStockFetcher(BaseFetcher):
@@ -84,9 +88,25 @@ class TWStockFetcher(BaseFetcher):
         logger.info(f"Fetching TW stock data for {self.symbol}")
 
         try:
-            # Fetch from twstock
-            stock = Stock(self.symbol)
-            stock.fetch_from(year=self.start_year, month=self.start_month)
+            # Monkey-patch requests to disable SSL verification for twstock
+            # This is necessary because Python 3.13+ has stricter SSL requirements
+            # and TWSE certificates are missing Subject Key Identifier
+            import requests
+            original_get = requests.get
+
+            def patched_get(*args, **kwargs):
+                kwargs['verify'] = False
+                return original_get(*args, **kwargs)
+
+            requests.get = patched_get
+
+            try:
+                # Fetch from twstock
+                stock = Stock(self.symbol)
+                stock.fetch_from(year=self.start_year, month=self.start_month)
+            finally:
+                # Restore original requests.get
+                requests.get = original_get
 
             if not stock.data:
                 raise DataFetchError(
