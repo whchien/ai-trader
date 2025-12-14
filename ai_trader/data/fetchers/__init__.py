@@ -8,7 +8,6 @@ from ai_trader.data.fetchers.forex import ForexDataFetcher
 from ai_trader.data.fetchers.tw_stock import TWStockFetcher
 from ai_trader.data.fetchers.us_stock import USStockFetcher
 from ai_trader.data.fetchers.crypto import (
-    BitcoinDataFetcher,
     CryptoDataFetcher,
     CryptoDataError,
 )
@@ -26,7 +25,6 @@ __all__ = [
     "VIXDataFetcher",
 
     # Crypto fetchers
-    "BitcoinDataFetcher",
     "CryptoDataFetcher",
     "CryptoDataError",
 

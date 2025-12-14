@@ -244,6 +244,12 @@ def fetch(
             market_dir = f"{output_dir}/us_stock"
         elif market == "tw":
             market_dir = f"{output_dir}/tw_stock"
+        elif market == "crypto":
+            market_dir = f"{output_dir}/crypto"
+        elif market == "forex":
+            market_dir = f"{output_dir}/forex"
+        elif market == "vix":
+            market_dir = f"{output_dir}/vix"
         else:
             market_dir = output_dir
 

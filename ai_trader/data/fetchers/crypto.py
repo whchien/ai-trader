@@ -1,5 +1,5 @@
 """
-Bitcoin and cryptocurrency data fetcher with retry logic and crypto-specific validation.
+Cryptocurrency data fetcher with retry logic and crypto-specific validation.
 """
 
 import time
@@ -21,15 +21,23 @@ class CryptoDataError(DataValidationError):
     pass
 
 
-class BitcoinDataFetcher:
+class CryptoDataFetcher:
     """
-    Fetches Bitcoin (BTC-USD) market data from Yahoo Finance with retry logic.
+    Generic cryptocurrency data fetcher supporting multiple crypto assets.
 
-    Similar to USStockFetcher but specialized for Bitcoin/cryptocurrency data
-    with additional validation for crypto-specific characteristics.
+    Fetches cryptocurrency market data from Yahoo Finance with retry logic
+    and crypto-specific validation.
+
+    Supported tickers include:
+    - BTC-USD (Bitcoin)
+    - ETH-USD (Ethereum)
+    - BNB-USD (Binance Coin)
+    - ADA-USD (Cardano)
+    - SOL-USD (Solana)
+    - And many more...
 
     Attributes:
-        ticker: Bitcoin ticker symbol (e.g., 'BTC-USD')
+        ticker: Cryptocurrency ticker symbol (e.g., 'BTC-USD', 'ETH-USD')
         start_date: Start date for data fetch
         end_date: End date for data fetch
         max_retries: Maximum retry attempts on failure
@@ -37,21 +45,27 @@ class BitcoinDataFetcher:
         timeout: Request timeout (seconds)
 
     Example:
-        >>> fetcher = BitcoinDataFetcher(
+        >>> # Fetch Ethereum data
+        >>> fetcher = CryptoDataFetcher(
+        ...     ticker="ETH-USD",
+        ...     start_date="2023-01-01"
+        ... )
+        >>> df = fetcher.fetch()
+        >>>
+        >>> # Fetch Bitcoin data
+        >>> btc_fetcher = CryptoDataFetcher(
         ...     ticker="BTC-USD",
         ...     start_date="2020-01-01",
         ...     end_date="2024-12-31"
         ... )
-        >>> df = fetcher.fetch()
-        >>> metrics = fetcher.calculate_volatility_metrics(df)
+        >>> btc_data = btc_fetcher.fetch()
+        >>> metrics = btc_fetcher.calculate_volatility_metrics(btc_data)
         >>> print(f"Volatility: {metrics['annualized_volatility']:.2f}%")
     """
 
-    DEFAULT_TICKER = "BTC-USD"
-
     def __init__(
         self,
-        ticker: str = "BTC-USD",
+        ticker: str,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
         max_retries: int = 3,
@@ -59,10 +73,10 @@ class BitcoinDataFetcher:
         timeout: int = 30
     ):
         """
-        Initialize BitcoinDataFetcher.
+        Initialize CryptoDataFetcher.
 
         Args:
-            ticker: Bitcoin ticker symbol (default: 'BTC-USD')
+            ticker: Cryptocurrency ticker symbol (e.g., 'BTC-USD', 'ETH-USD', 'SOL-USD')
             start_date: Start date in YYYY-MM-DD format
             end_date: End date in YYYY-MM-DD format
             max_retries: Maximum number of retry attempts
@@ -77,24 +91,24 @@ class BitcoinDataFetcher:
         self.timeout = timeout
 
         logger.info(
-            f"Initialized BitcoinDataFetcher for {ticker} "
+            f"Initialized CryptoDataFetcher for {ticker} "
             f"from {start_date or 'earliest'} to {end_date or 'latest'}"
         )
 
     def fetch(self) -> pd.DataFrame:
         """
-        Fetch Bitcoin data with retry logic and exponential backoff.
+        Fetch cryptocurrency data with retry logic and exponential backoff.
 
         Returns:
-            DataFrame with Bitcoin OHLCV data (lowercase columns)
+            DataFrame with cryptocurrency OHLCV data (lowercase columns)
             Index: DatetimeIndex named 'date'
-            Columns: ['open', 'high', 'low', 'close', 'volume', 'adj_close'] (lowercase)
+            Columns: ['open', 'high', 'low', 'close', 'volume', 'adj close'] (lowercase)
 
         Raises:
             DataFetchError: If all retry attempts fail
 
         Example:
-            >>> fetcher = BitcoinDataFetcher(start_date="2024-01-01")
+            >>> fetcher = CryptoDataFetcher(ticker="ETH-USD", start_date="2024-01-01")
             >>> df = fetcher.fetch()
             >>> print(f"Fetched {len(df)} rows")
         """
@@ -181,31 +195,31 @@ class BitcoinDataFetcher:
         # Should not reach here due to exceptions, but just in case
         return None
 
-    def validate_bitcoin_data(
+    def validate_crypto_data(
         self,
         df: pd.DataFrame,
         max_daily_change_pct: float = 50.0,
-        price_min: float = 100.0,
-        price_max: float = 150000.0,
+        price_min: float = 0.01,
+        price_max: float = 1000000.0,
         min_volume: float = 100.0,
         max_gap_days: int = 2
     ) -> bool:
         """
-        Validate Bitcoin data for crypto-specific characteristics.
+        Validate cryptocurrency data for crypto-specific characteristics.
 
         Performs comprehensive validation including:
         - Price positivity (all prices > 0)
-        - Price range within historical bounds
+        - Price range within reasonable bounds
         - Volume consistency (no zero-volume days if required)
         - Daily price changes within volatility thresholds
         - Gap detection for missing trading periods
         - OHLC consistency (Low <= Open/Close <= High)
 
         Args:
-            df: DataFrame with Bitcoin data
+            df: DataFrame with cryptocurrency data
             max_daily_change_pct: Maximum allowed daily price change percentage
-            price_min: Minimum historical price bound
-            price_max: Maximum historical price bound
+            price_min: Minimum reasonable price bound
+            price_max: Maximum reasonable price bound
             min_volume: Minimum volume threshold (millions USD)
             max_gap_days: Maximum allowed gap in trading data
 
@@ -216,9 +230,9 @@ class BitcoinDataFetcher:
             CryptoDataError: If critical validation fails
 
         Example:
-            >>> fetcher = BitcoinDataFetcher()
-            >>> df = fetcher.fetch_bitcoin_data()
-            >>> is_valid = fetcher.validate_bitcoin_data(df)
+            >>> fetcher = CryptoDataFetcher(ticker="BTC-USD")
+            >>> df = fetcher.fetch()
+            >>> is_valid = fetcher.validate_crypto_data(df)
             >>> print(f"Data valid: {is_valid}")
         """
         if df.empty:
@@ -251,14 +265,14 @@ class BitcoinDataFetcher:
             max_price = df['high'].max()
             if max_price > price_max:
                 validation_issues.append(
-                    f"Maximum price {max_price:.2f} exceeds historical bound {price_max:.2f}"
+                    f"Maximum price {max_price:.2f} exceeds reasonable bound {price_max:.2f}"
                 )
 
         if 'low' in df.columns:
             min_price = df['low'].min()
             if min_price < price_min:
                 validation_issues.append(
-                    f"Minimum price {min_price:.2f} below historical bound {price_min:.2f}"
+                    f"Minimum price {min_price:.2f} below reasonable bound {price_min:.2f}"
                 )
 
         # 4. Check for zero-volume days
@@ -328,10 +342,10 @@ class BitcoinDataFetcher:
 
     def calculate_volatility_metrics(self, df: pd.DataFrame) -> Dict[str, float]:
         """
-        Calculate Bitcoin-specific volatility metrics.
+        Calculate cryptocurrency-specific volatility metrics.
 
         Args:
-            df: DataFrame with Bitcoin price data
+            df: DataFrame with cryptocurrency price data
 
         Returns:
             Dictionary with volatility statistics:
@@ -341,7 +355,7 @@ class BitcoinDataFetcher:
             - avg_daily_return: Average daily return percentage
 
         Example:
-            >>> fetcher = BitcoinDataFetcher()
+            >>> fetcher = CryptoDataFetcher(ticker="BTC-USD")
             >>> df = fetcher.fetch()
             >>> metrics = fetcher.calculate_volatility_metrics(df)
             >>> print(f"Ann. Volatility: {metrics['annualized_volatility']:.2f}%")
@@ -381,7 +395,7 @@ class BitcoinDataFetcher:
 
     def get_data_summary(self, df: pd.DataFrame) -> Dict[str, Any]:
         """
-        Generate comprehensive summary statistics for Bitcoin data.
+        Generate comprehensive summary statistics for cryptocurrency data.
 
         Includes crypto-specific metrics:
         - Price range (high/low)
@@ -392,13 +406,13 @@ class BitcoinDataFetcher:
         - Total return
 
         Args:
-            df: DataFrame with Bitcoin data
+            df: DataFrame with cryptocurrency data
 
         Returns:
             Dictionary with summary statistics
 
         Example:
-            >>> fetcher = BitcoinDataFetcher()
+            >>> fetcher = CryptoDataFetcher(ticker="ETH-USD")
             >>> df = fetcher.fetch()
             >>> summary = fetcher.get_data_summary(df)
             >>> print(f"Total Return: {summary['total_return_pct']:.2f}%")
@@ -455,55 +469,10 @@ class BitcoinDataFetcher:
         return summary
 
 
-class CryptoDataFetcher(BitcoinDataFetcher):
-    """
-    Generic cryptocurrency data fetcher supporting multiple crypto assets.
-
-    Extends BitcoinDataFetcher to support any cryptocurrency available on Yahoo Finance.
-
-    Supported tickers include:
-    - BTC-USD (Bitcoin)
-    - ETH-USD (Ethereum)
-    - BNB-USD (Binance Coin)
-    - ADA-USD (Cardano)
-    - SOL-USD (Solana)
-    - And many more...
-
-    Example:
-        >>> # Fetch Ethereum data
-        >>> eth_fetcher = CryptoDataFetcher(
-        ...     ticker="ETH-USD",
-        ...     start_date="2023-01-01"
-        ... )
-        >>> eth_data = eth_fetcher.fetch()  # Works for any crypto
-        >>>
-        >>> # Fetch Solana data
-        >>> sol_fetcher = CryptoDataFetcher(ticker="SOL-USD")
-        >>> sol_data = sol_fetcher.fetch()
-    """
-
-    def __init__(self, ticker: str, **kwargs):
-        """
-        Initialize CryptoDataFetcher for any cryptocurrency.
-
-        Args:
-            ticker: Cryptocurrency ticker (e.g., 'ETH-USD', 'SOL-USD')
-            **kwargs: Additional arguments passed to BitcoinDataFetcher
-
-        Example:
-            >>> fetcher = CryptoDataFetcher(
-            ...     ticker="ETH-USD",
-            ...     start_date="2024-01-01",
-            ...     max_retries=5
-            ... )
-        """
-        super().__init__(ticker=ticker, **kwargs)
-        logger.info(f"Initialized CryptoDataFetcher for {ticker}")
-
 
 if __name__ == "__main__":
     # Example usage
-    fetcher = BitcoinDataFetcher(start_date="2024-01-01", end_date="2024-12-31")
+    fetcher = CryptoDataFetcher(ticker="BTC-USD", start_date="2024-01-01", end_date="2024-12-31")
     df = fetcher.fetch()
 
     print(f"\nFetched {len(df)} rows of Bitcoin data")
@@ -518,5 +487,5 @@ if __name__ == "__main__":
     print(f"  Max Drawdown: {summary['volatility']['max_drawdown']:.2f}%")
 
     # Validate the data
-    is_valid = fetcher.validate_bitcoin_data(df)
+    is_valid = fetcher.validate_crypto_data(df)
     print(f"\nData Validation: {'PASSED' if is_valid else 'FAILED'}")
