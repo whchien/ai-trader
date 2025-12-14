@@ -163,7 +163,7 @@ def list_strategies(strategy_type: str):
 
 @cli.command()
 @click.argument("symbol")
-@click.option("--market", type=click.Choice(["us", "tw", "crypto"]), default="us")
+@click.option("--market", type=click.Choice(["us", "tw", "crypto", "forex", "vix"]), default="us")
 @click.option("--start-date", required=True, help="Start date (YYYY-MM-DD)")
 @click.option("--end-date", help="End date (YYYY-MM-DD), defaults to today")
 @click.option("--output-dir", help="Output directory", default="./data")
@@ -181,8 +181,16 @@ def fetch(
         ai-trader fetch AAPL --market us --start-date 2020-01-01
         ai-trader fetch 2330 --market tw --start-date 2020-01-01
         ai-trader fetch BTC-USD --market crypto --start-date 2020-01-01
+        ai-trader fetch EURUSD=X --market forex --start-date 2020-01-01
+        ai-trader fetch VIX --market vix --start-date 2020-01-01
     """
-    from ai_trader.data.fetchers import USStockFetcher, TWStockFetcher, CryptoDataFetcher
+    from ai_trader.data.fetchers import (
+        USStockFetcher,
+        TWStockFetcher,
+        CryptoDataFetcher,
+        ForexDataFetcher,
+        VIXDataFetcher
+    )
     from ai_trader.data.storage import FileManager
 
     click.echo(f"\nFetching {market.upper()} market data for {symbol}...")
@@ -205,6 +213,18 @@ def fetch(
         elif market == "crypto":
             fetcher = CryptoDataFetcher(
                 ticker=symbol,
+                start_date=start_date,
+                end_date=end_date
+            )
+        elif market == "forex":
+            fetcher = ForexDataFetcher(
+                symbol=symbol,
+                start_date=start_date,
+                end_date=end_date
+            )
+        elif market == "vix":
+            # VIX uses hardcoded symbol ^VIX (symbol argument is ignored)
+            fetcher = VIXDataFetcher(
                 start_date=start_date,
                 end_date=end_date
             )

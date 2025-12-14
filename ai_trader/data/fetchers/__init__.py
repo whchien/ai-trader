@@ -3,6 +3,8 @@ from ai_trader.data.fetchers.base import (
     BaseFetcher,
     USStockFetcher,
     TWStockFetcher,
+    ForexDataFetcher,
+    VIXDataFetcher,
     load_example
 )
 from ai_trader.data.fetchers.crypto import (
@@ -18,6 +20,10 @@ __all__ = [
     # Stock fetchers
     "USStockFetcher",
     "TWStockFetcher",
+
+    # Forex and indices
+    "ForexDataFetcher",
+    "VIXDataFetcher",
 
     # Crypto fetchers
     "BitcoinDataFetcher",
