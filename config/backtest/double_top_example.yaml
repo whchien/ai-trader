@@ -1,4 +1,4 @@
-# Example configuration for BBands (Bollinger Bands) strategy backtest
+# Example configuration for Double Top strategy backtest
 
 broker:
   cash: 1000000
@@ -11,10 +11,13 @@ data:
   date_col: "Date"  # Column name for date (use "Date" for US stocks)
 
 strategy:
-  class: "BBandsStrategy"  # Strategy class name
+  class: "DoubleTopStrategy"  # Strategy class name
   params:
-    period: 20  # Bollinger Bands period
-    devfactor: 2  # Standard deviation factor
+    sma_short: 60  # Short SMA period
+    sma_long: 120  # Long SMA period
+    vol_short: 5  # Short volume period
+    vol_long: 20  # Long volume period
+    past_highest: 60  # Period for highest price
 
 sizer:
   type: "percent"

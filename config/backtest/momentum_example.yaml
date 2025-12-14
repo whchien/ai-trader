@@ -1,4 +1,4 @@
-# Example configuration for BBands (Bollinger Bands) strategy backtest
+# Example configuration for Momentum strategy backtest
 
 broker:
   cash: 1000000
@@ -11,10 +11,10 @@ data:
   date_col: "Date"  # Column name for date (use "Date" for US stocks)
 
 strategy:
-  class: "BBandsStrategy"  # Strategy class name
+  class: "MomentumStrategy"  # Strategy class name
   params:
-    period: 20  # Bollinger Bands period
-    devfactor: 2  # Standard deviation factor
+    sma_period: 50  # SMA period
+    momentum_period: 14  # Momentum period
 
 sizer:
   type: "percent"

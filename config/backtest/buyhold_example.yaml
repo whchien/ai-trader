@@ -1,4 +1,4 @@
-# Example configuration for BBands (Bollinger Bands) strategy backtest
+# Example configuration for Buy and Hold strategy backtest
 
 broker:
   cash: 1000000
@@ -11,10 +11,8 @@ data:
   date_col: "Date"  # Column name for date (use "Date" for US stocks)
 
 strategy:
-  class: "BBandsStrategy"  # Strategy class name
-  params:
-    period: 20  # Bollinger Bands period
-    devfactor: 2  # Standard deviation factor
+  class: "BuyHoldStrategy"  # Strategy class name
+  params: {}  # No parameters needed
 
 sizer:
   type: "percent"

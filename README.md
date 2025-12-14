@@ -20,24 +20,33 @@ A comprehensive backtesting framework for algorithmic trading strategies built o
 - **Multi-Market** - US stocks, TW stocks, and crypto support
 - **Rich Examples** - 5 example scripts and 4 config templates
 
-## Strategy overview 
-### Single stock trading 
-- SMA (Niave SMA & Cross SMA)
-- Bollinger Band
-- Momentum 
-- RSI
-- Resistance Support Relative Strength (RSRS)
-- ROC
-- Double Top
-- Risk Averse
-- Turtle
-- Volatility Contraction Pattern (VCP)
+## Strategy overview
+### Single Stock Trading Strategies
 
-### Portfolio trading
-- ROC rotation
-- RSRS rotation
-- Triple RSI rotation
-- Multi Bollinger Bands rotation
+| Strategy                  | Description                                                                                             |
+| :------------------------ | :------------------------------------------------------------------------------------------------------ |
+| **Buy & Hold**            | Buys on the first day and holds to the end. A baseline for performance comparison.                        |
+| **SMA (Naive)**           | Buys when price is above a moving average, sells when below.                                            |
+| **SMA (Crossover)**       | Buys on a "golden cross" (fast MA over slow MA), sells on a "death cross".                              |
+| **MACD**                  | Buys on a MACD "golden cross" and sells on a "death cross".                                             |
+| **Bollinger Bands**       | A mean-reversion strategy that buys at the lower band and sells at the upper band.                      |
+| **Momentum**              | Buys when momentum turns positive, sells when price falls below a trend-filtering MA.                   |
+| **RSI**                   | Combines RSI and Bollinger Bands. Buys when RSI is oversold and price is below the lower band.          |
+| **RSRS**                  | Uses linear regression of high/low prices to buy on signals of strengthening support.                     |
+| **ROC**                   | A simple momentum strategy that buys on a high Rate of Change and sells on a low one.                   |
+| **Double Top**            | Buys on a breakout after a double top pattern, with trend and volume confirmation.                      |
+| **Risk Averse**           | Buys low-volatility stocks making new highs on high volume.                                             |
+| **Turtle Trading**        | A classic trend-following strategy that buys on breakouts and sells on breakdowns, using ATR for position sizing. |
+| **Volatility Contraction Pattern (VCP)** | Buys on breakouts after price and volume volatility have contracted.                    |
+
+### Portfolio Trading Strategies
+
+| Strategy                    | Description                                                                                         |
+| :-------------------------- | :-------------------------------------------------------------------------------------------------- |
+| **ROC Rotation**            | Periodically rotates into the top K stocks with the highest Rate of Change (momentum).              |
+| **RSRS Rotation**           | Periodically rotates into stocks with high RSRS indicator values (strong support).                  |
+| **Triple RSI Rotation**     | Rotates stocks based on a combination of long, medium, and short-term RSI signals.                  |
+| **Multi Bollinger Bands Rotation** | A breakout rotation strategy that buys stocks crossing above their upper Bollinger Band.     |
 
 ### Machine learning based (dev)
 - Logistic regression

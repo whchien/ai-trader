@@ -1,4 +1,4 @@
-# Example configuration for BBands (Bollinger Bands) strategy backtest
+# Example configuration for Naive SMA strategy backtest
 
 broker:
   cash: 1000000
@@ -11,10 +11,9 @@ data:
   date_col: "Date"  # Column name for date (use "Date" for US stocks)
 
 strategy:
-  class: "BBandsStrategy"  # Strategy class name
+  class: "NaiveSMAStrategy"  # Strategy class name
   params:
-    period: 20  # Bollinger Bands period
-    devfactor: 2  # Standard deviation factor
+    period: 15  # Moving average period
 
 sizer:
   type: "percent"

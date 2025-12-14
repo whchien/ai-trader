@@ -4,7 +4,7 @@ from ai_trader.backtesting.strategies.base import BaseStrategy
 
 
 class ROCStochStrategy(BaseStrategy):
-    parpams = dict(
+    params = dict(
         roc_period=12, stoch_period=14, stoch_smooth=3, oversold=20, overbought=80
     )
 
@@ -88,7 +88,7 @@ class NaiveROCStrategy(BaseStrategy):
                 self.close()
 
 
-if __main__ == "__main__":
+if __name__ == "__main__":
     from ai_trader.utils.backtest import run_backtest
 
     # Run backtest with NaiveROCStrategy
@@ -99,5 +99,4 @@ if __main__ == "__main__":
         commission=0.001425,
     )
 
-    print("
-Backtest completed! Use cerebro.plot() to visualize results.")
+    print("Backtest completed! Use cerebro.plot() to visualize results.")

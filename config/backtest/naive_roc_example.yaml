@@ -1,4 +1,4 @@
-# Example configuration for BBands (Bollinger Bands) strategy backtest
+# Example configuration for Naive ROC strategy backtest
 
 broker:
   cash: 1000000
@@ -11,10 +11,10 @@ data:
   date_col: "Date"  # Column name for date (use "Date" for US stocks)
 
 strategy:
-  class: "BBandsStrategy"  # Strategy class name
+  class: "NaiveROCStrategy"  # Strategy class name
   params:
-    period: 20  # Bollinger Bands period
-    devfactor: 2  # Standard deviation factor
+    period: 20  # Rate of Change period
+    threshold: 0.08  # ROC threshold for signals
 
 sizer:
   type: "percent"

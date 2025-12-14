@@ -1,4 +1,4 @@
-# Example configuration for BBands (Bollinger Bands) strategy backtest
+# Example configuration for RSRS (Resistance Support Relative Strength) strategy backtest
 
 broker:
   cash: 1000000
@@ -11,10 +11,11 @@ data:
   date_col: "Date"  # Column name for date (use "Date" for US stocks)
 
 strategy:
-  class: "BBandsStrategy"  # Strategy class name
+  class: "RSRSStrategy"  # Strategy class name
   params:
-    period: 20  # Bollinger Bands period
-    devfactor: 2  # Standard deviation factor
+    period: 20  # RSRS calculation period
+    buy_threshold: 0.8  # Buy signal threshold
+    close_threshold: 0.5  # Close position threshold
 
 sizer:
   type: "percent"

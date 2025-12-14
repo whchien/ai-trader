@@ -109,7 +109,7 @@ class TurtleTradingStrategy(BaseStrategy):
                 self.buy_count = 1  # Record the price of this transaction
 
 
-if __main__ == "__main__":
+if __name__ == "__main__":
     from ai_trader.utils.backtest import run_backtest
 
     # Run backtest with TurtleTradingStrategy
@@ -120,5 +120,4 @@ if __main__ == "__main__":
         commission=0.001425,
     )
 
-    print("
-Backtest completed! Use cerebro.plot() to visualize results.")
+    print("Backtest completed! Use cerebro.plot() to visualize results.")

@@ -1,16 +1,19 @@
 import backtrader as bt
 
 
-import backtrader as bt
-
-
 class BaseStrategy(bt.Strategy):
+    # Define column widths for consistent formatting
+    COL_WIDTH_ACTION = 15
+    COL_WIDTH_DETAIL1 = 20
+    COL_WIDTH_DETAIL2 = 20
+    COL_WIDTH_DETAIL3 = 20
+
     def log(self, txt, dt=None):
         """
         Log the provided text with a timestamp.
         """
         dt = dt or self.datas[0].datetime.date(0)
-        print(f"{dt.isoformat()}, {txt}")
+        print(f"{dt.isoformat()} │ {txt}")
 
     def notify_order(self, order):
         """
@@ -20,19 +23,34 @@ class BaseStrategy(bt.Strategy):
             # Buy/Sell order submitted/accepted to/by broker - Nothing to do
             return
 
-        # Check if an order has been completed
         if order.status == order.Completed:
             if order.isbuy():
+                action_str = f"{'▲ BUY':<{self.COL_WIDTH_ACTION}}"
+                detail1_str = f"Price: ${order.executed.price:>8.2f}"
+                detail2_str = f"Value: ${order.executed.value:>11,.2f}"
+                detail3_str = f"Commission: ${order.executed.comm:>6.2f}"
+
+                # Pad the detail strings to their fixed widths
+                padded_detail1 = f"{detail1_str:<{self.COL_WIDTH_DETAIL1}}"
+                padded_detail2 = f"{detail2_str:<{self.COL_WIDTH_DETAIL2}}"
+                padded_detail3 = f"{detail3_str:<{self.COL_WIDTH_DETAIL3}}"
+
                 self.log(
-                    f"[BUY] Price: {order.executed.price:<10.2f} | "
-                    f"Cost: {order.executed.value:<10.2f} | "
-                    f"Comm: {order.executed.comm:<10.2f}"
+                    f"{action_str} │ {padded_detail1} │ {padded_detail2} │ {padded_detail3}"
                 )
             elif order.issell():
+                action_str = f"{'▼ SELL':<{self.COL_WIDTH_ACTION}}"
+                detail1_str = f"Price: ${order.executed.price:>8.2f}"
+                detail2_str = f"Value: ${order.executed.value:>11,.2f}"
+                detail3_str = f"Commission: ${order.executed.comm:>6.2f}"
+
+                # Pad the detail strings to their fixed widths
+                padded_detail1 = f"{detail1_str:<{self.COL_WIDTH_DETAIL1}}"
+                padded_detail2 = f"{detail2_str:<{self.COL_WIDTH_DETAIL2}}"
+                padded_detail3 = f"{detail3_str:<{self.COL_WIDTH_DETAIL3}}"
+
                 self.log(
-                    f"[SELL] Price: {order.executed.price:<10.2f} | "
-                    f"Cost: {order.executed.value:<10.2f} | "
-                    f"Comm: {order.executed.comm:<10.2f}"
+                    f"{action_str} │ {padded_detail1} │ {padded_detail2} │ {padded_detail3}"
                 )
             self.bar_executed = len(self)
 
@@ -44,7 +62,16 @@ class BaseStrategy(bt.Strategy):
                 order.Partial: "Partial",
             }
             status = status_map.get(order.status, "Unknown")
-            self.log(f"[{order.data._name}] Order placement failed - status: {status}")
+            action_str = f"{'✗ ORDER FAILED':<{self.COL_WIDTH_ACTION}}"
+            detail1_str = f"Status: {status}"
+
+            # Pad the detail string
+            padded_detail1 = f"{detail1_str:<{self.COL_WIDTH_DETAIL1}}"
+            padded_detail2 = f"{'':<{self.COL_WIDTH_DETAIL2}}" # Empty for this type of log
+            padded_detail3 = f"{'':<{self.COL_WIDTH_DETAIL3}}" # Empty for this type of log
+
+            self.log(f"{action_str} │ {padded_detail1} │ {padded_detail2} │ {padded_detail3}")
+
 
         # Write down: no pending order
         self.order = None
@@ -56,7 +83,15 @@ class BaseStrategy(bt.Strategy):
         if not trade.isclosed:
             return
 
+        profit_symbol = "+" if trade.pnlcomm > 0 else "-"
+        action_str = f"{f'{profit_symbol} P&L':<{self.COL_WIDTH_ACTION}}"
+        detail1_str = f"Gross: ${trade.pnl:>10,.2f}"
+        detail2_str = f"Net: ${trade.pnlcomm:>10,.2f}"
+
+        padded_detail1 = f"{detail1_str:<{self.COL_WIDTH_DETAIL1}}"
+        padded_detail2 = f"{detail2_str:<{self.COL_WIDTH_DETAIL2}}"
+        padded_detail3 = f"{'':<{self.COL_WIDTH_DETAIL3}}" # Empty for P&L logs
+
         self.log(
-            f"[OPERATION PROFIT] Gross: {trade.pnl:<10.2f} | "
-            f"Net: {trade.pnlcomm:<10.2f}"
+            f"{action_str} │ {padded_detail1} │ {padded_detail2} │ {padded_detail3}"
         )

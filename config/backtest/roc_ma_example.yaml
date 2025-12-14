@@ -1,4 +1,4 @@
-# Example configuration for BBands (Bollinger Bands) strategy backtest
+# Example configuration for ROC + MA strategy backtest
 
 broker:
   cash: 1000000
@@ -11,10 +11,11 @@ data:
   date_col: "Date"  # Column name for date (use "Date" for US stocks)
 
 strategy:
-  class: "BBandsStrategy"  # Strategy class name
+  class: "ROCMAStrategy"  # Strategy class name
   params:
-    period: 20  # Bollinger Bands period
-    devfactor: 2  # Standard deviation factor
+    roc_period: 12  # Rate of Change period
+    fast_ma_period: 10  # Fast moving average period
+    slow_ma_period: 30  # Slow moving average period
 
 sizer:
   type: "percent"

@@ -185,12 +185,12 @@ def fetch(
         ai-trader fetch VIX --market vix --start-date 2020-01-01
     """
     from ai_trader.data.fetchers import (
-        USStockFetcher,
-        TWStockFetcher,
-        CryptoDataFetcher,
-        ForexDataFetcher,
-        VIXDataFetcher
+        CryptoDataFetcher
     )
+    from ai_trader.data.fetchers import VIXDataFetcher
+    from ai_trader.data.fetchers import ForexDataFetcher
+    from ai_trader.data.fetchers import TWStockFetcher
+    from ai_trader.data.fetchers import USStockFetcher
     from ai_trader.data.storage import FileManager
 
     click.echo(f"\nFetching {market.upper()} market data for {symbol}...")
@@ -332,21 +332,19 @@ def _load_strategy_class(class_path: str):
     """
     # If it's a short name, try to find it in classic or portfolio
     if "." not in class_path:
-        # Try classic first
+        # Try to import from classic module (searches __init__.py exports)
         try:
-            module = importlib.import_module(
-                f"ai_trader.backtesting.strategies.classic.{class_path.lower().replace('strategy', '')}"
-            )
-            return getattr(module, class_path)
+            from ai_trader.backtesting.strategies import classic
+            if hasattr(classic, class_path):
+                return getattr(classic, class_path)
         except (ImportError, AttributeError):
             pass
 
-        # Try portfolio
+        # Try to import from portfolio module (searches __init__.py exports)
         try:
-            module = importlib.import_module(
-                f"ai_trader.backtesting.strategies.portfolio.{class_path.lower().replace('strategy', '')}"
-            )
-            return getattr(module, class_path)
+            from ai_trader.backtesting.strategies import portfolio
+            if hasattr(portfolio, class_path):
+                return getattr(portfolio, class_path)
         except (ImportError, AttributeError):
             pass
 

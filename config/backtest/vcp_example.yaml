@@ -1,4 +1,4 @@
-# Example configuration for BBands (Bollinger Bands) strategy backtest
+# Example configuration for VCP (Volatility Contraction Pattern) strategy backtest
 
 broker:
   cash: 1000000
@@ -11,10 +11,10 @@ data:
   date_col: "Date"  # Column name for date (use "Date" for US stocks)
 
 strategy:
-  class: "BBandsStrategy"  # Strategy class name
+  class: "VCPStrategy"  # Strategy class name
   params:
-    period: 20  # Bollinger Bands period
-    devfactor: 2  # Standard deviation factor
+    period_short: 10  # Short volatility period
+    period_long: 60  # Long volatility period
 
 sizer:
   type: "percent"

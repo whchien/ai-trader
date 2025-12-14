@@ -1,4 +1,4 @@
-# Example configuration for BBands (Bollinger Bands) strategy backtest
+# Example configuration for RSI + Bollinger Bands strategy backtest
 
 broker:
   cash: 1000000
@@ -11,10 +11,13 @@ data:
   date_col: "Date"  # Column name for date (use "Date" for US stocks)
 
 strategy:
-  class: "BBandsStrategy"  # Strategy class name
+  class: "RsiBollingerBandsStrategy"  # Strategy class name
   params:
-    period: 20  # Bollinger Bands period
-    devfactor: 2  # Standard deviation factor
+    rsi_period: 14  # RSI period
+    bb_period: 20  # Bollinger Bands period
+    bb_dev: 2  # Bollinger Bands standard deviation
+    oversold: 30  # RSI oversold threshold
+    overbought: 70  # RSI overbought threshold
 
 sizer:
   type: "percent"
