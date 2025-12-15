@@ -81,13 +81,6 @@ analyzers:
   - sqn         # System Quality Number
 ```
 
-## Available Example Configs
-
-- **sma_example.yaml** - Simple Moving Average crossover strategy
-- **bbands_example.yaml** - Bollinger Bands mean reversion strategy
-- **portfolio_example.yaml** - Multi-stock rotation strategy
-- **crypto_example.yaml** - RSI strategy for cryptocurrency
-
 ## Creating Your Own Config
 
 1. Copy an example config that matches your use case
@@ -124,11 +117,6 @@ analyzers:
 
 ## Tips
 
-- Start with small cash amounts for testing
-- Use appropriate commission rates for your market:
-  - Taiwan stocks: 0.001425
-  - US stocks: 0.001
-  - Crypto: 0.001-0.0025
 - Always include at least 'sharpe', 'drawdown', 'returns' analyzers
 - Test date ranges that include both bull and bear markets
 - Compare results against BuyHoldStrategy benchmark

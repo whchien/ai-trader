@@ -162,13 +162,15 @@ def list_strategies(strategy_type: str):
 
 
 @cli.command()
-@click.argument("symbol")
+@click.argument("symbols", nargs=-1, required=False)
+@click.option("--symbols-file", type=click.Path(exists=True), help="File containing symbols (one per line)")
 @click.option("--market", type=click.Choice(["us", "tw", "crypto", "forex", "vix"]), default="us")
 @click.option("--start-date", required=True, help="Start date (YYYY-MM-DD)")
 @click.option("--end-date", help="End date (YYYY-MM-DD), defaults to today")
 @click.option("--output-dir", help="Output directory", default="./data")
 def fetch(
-    symbol: str,
+    symbols: tuple[str],
+    symbols_file: Optional[str],
     market: str,
     start_date: str,
     end_date: Optional[str],
@@ -177,103 +179,200 @@ def fetch(
     """
     Fetch market data and save to CSV.
 
+    Supports multiple input methods:
+    - Space-separated symbols: ai-trader fetch AAPL MSFT GOOGL --market us --start-date 2020-01-01
+    - Comma-separated symbols: ai-trader fetch AAPL,MSFT,GOOGL --market us --start-date 2020-01-01
+    - From file: ai-trader fetch --symbols-file symbols.txt --market us --start-date 2020-01-01
+    - Single symbol (backward compatible): ai-trader fetch AAPL --market us --start-date 2020-01-01
+
     Example:
         ai-trader fetch AAPL --market us --start-date 2020-01-01
-        ai-trader fetch 2330 --market tw --start-date 2020-01-01
-        ai-trader fetch BTC-USD --market crypto --start-date 2020-01-01
-        ai-trader fetch EURUSD=X --market forex --start-date 2020-01-01
-        ai-trader fetch VIX --market vix --start-date 2020-01-01
+        ai-trader fetch AAPL MSFT GOOGL --market us --start-date 2020-01-01
+        ai-trader fetch 2330 2317 2454 --market tw --start-date 2020-01-01
+        ai-trader fetch BTC-USD ETH-USD SOL-USD --market crypto --start-date 2020-01-01
+        ai-trader fetch --symbols-file symbols.txt --market us --start-date 2020-01-01
     """
     from ai_trader.data.fetchers import (
-        CryptoDataFetcher
+        CryptoDataFetcher,
+        ForexDataFetcher,
+        TWStockFetcher,
+        USStockFetcher,
+        VIXDataFetcher,
     )
-    from ai_trader.data.fetchers import VIXDataFetcher
-    from ai_trader.data.fetchers import ForexDataFetcher
-    from ai_trader.data.fetchers import TWStockFetcher
-    from ai_trader.data.fetchers import USStockFetcher
     from ai_trader.data.storage import FileManager
 
-    click.echo(f"\nFetching {market.upper()} market data for {symbol}...")
+    # Parse and collect symbols from multiple sources
+    symbol_list = []
+
+    # From command-line arguments (space-separated and comma-separated)
+    if symbols:
+        for sym in symbols:
+            # Handle comma-separated within single argument
+            symbol_list.extend(s.strip() for s in sym.split(',') if s.strip())
+
+    # From file
+    if symbols_file:
+        if symbols:
+            click.echo("✗ Error: Cannot specify both symbol arguments and --symbols-file", err=True)
+            sys.exit(1)
+        with open(symbols_file) as f:
+            symbol_list.extend(line.strip() for line in f if line.strip())
+
+    # Validate we have at least one symbol
+    if not symbol_list:
+        click.echo("✗ Error: No symbols provided. Use symbol arguments or --symbols-file", err=True)
+        click.echo("\nExamples:")
+        click.echo("  ai-trader fetch AAPL --market us --start-date 2020-01-01")
+        click.echo("  ai-trader fetch AAPL MSFT GOOGL --market us --start-date 2020-01-01")
+        click.echo("  ai-trader fetch --symbols-file symbols.txt --market us --start-date 2020-01-01")
+        sys.exit(1)
+
+    # Remove duplicates while preserving order
+    seen = set()
+    symbol_list = [s for s in symbol_list if not (s in seen or seen.add(s))]
+
+    # Display summary
+    click.echo(f"\nFetching {market.upper()} market data for {len(symbol_list)} symbol(s)...")
+    click.echo(f"Symbols: {', '.join(symbol_list)}")
     click.echo(f"Date range: {start_date} to {end_date or 'today'}\n")
 
+    # Create market-specific subdirectory
+    if market == "us":
+        market_dir = f"{output_dir}/us_stock"
+    elif market == "tw":
+        market_dir = f"{output_dir}/tw_stock"
+    elif market == "crypto":
+        market_dir = f"{output_dir}/crypto"
+    elif market == "forex":
+        market_dir = f"{output_dir}/forex"
+    elif market == "vix":
+        market_dir = f"{output_dir}/vix"
+    else:
+        market_dir = output_dir
+
     try:
-        # Create appropriate fetcher
-        if market == "us":
-            fetcher = USStockFetcher(
-                symbol=symbol,
-                start_date=start_date,
-                end_date=end_date
-            )
-        elif market == "tw":
-            fetcher = TWStockFetcher(
-                symbol=symbol,
-                start_date=start_date,
-                end_date=end_date
-            )
-        elif market == "crypto":
-            fetcher = CryptoDataFetcher(
+        # Handle batch vs single symbol
+        if len(symbol_list) == 1 or market in ("forex", "vix"):
+            # Single symbol or markets that don't support batch - use original logic
+            symbol = symbol_list[0]
+
+            if market == "us":
+                fetcher = USStockFetcher(
+                    symbol=symbol,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+            elif market == "tw":
+                fetcher = TWStockFetcher(
+                    symbol=symbol,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+            elif market == "crypto":
+                fetcher = CryptoDataFetcher(
+                    ticker=symbol,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+            elif market == "forex":
+                fetcher = ForexDataFetcher(
+                    symbol=symbol,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+            elif market == "vix":
+                fetcher = VIXDataFetcher(
+                    start_date=start_date,
+                    end_date=end_date
+                )
+            else:
+                click.echo(f"✗ Invalid market: {market}", err=True)
+                sys.exit(1)
+
+            # Fetch data
+            df = fetcher.fetch()
+
+            if df is None or df.empty:
+                click.echo("✗ No data returned", err=True)
+                sys.exit(1)
+
+            # Save using FileManager
+            file_manager = FileManager(base_data_dir=market_dir)
+            actual_end_date = end_date or df.index[-1].strftime("%Y-%m-%d")
+
+            filepath = file_manager.save_to_csv(
+                df=df,
                 ticker=symbol,
                 start_date=start_date,
-                end_date=end_date
+                end_date=actual_end_date,
+                overwrite=True
             )
-        elif market == "forex":
-            fetcher = ForexDataFetcher(
-                symbol=symbol,
-                start_date=start_date,
-                end_date=end_date
-            )
-        elif market == "vix":
-            # VIX uses hardcoded symbol ^VIX (symbol argument is ignored)
-            fetcher = VIXDataFetcher(
-                start_date=start_date,
-                end_date=end_date
-            )
+
+            click.echo(f"✓ Data saved to {filepath}")
+            click.echo(f"  Rows: {len(df)}")
+            click.echo(f"  Columns: {', '.join(df.columns)}")
+            click.echo(f"  Date range: {df.index[0]} to {df.index[-1]}")
+
         else:
-            click.echo(f"✗ Invalid market: {market}", err=True)
-            sys.exit(1)
+            # Batch mode for US/TW stocks and crypto
+            if market == "us":
+                fetcher = USStockFetcher(
+                    symbol="",  # Not used in batch mode
+                    start_date=start_date,
+                    end_date=end_date
+                )
+                successful_data, failed_symbols = fetcher.fetch_batch(symbol_list)
+            elif market == "tw":
+                fetcher = TWStockFetcher(
+                    symbol="",  # Not used in batch mode
+                    start_date=start_date,
+                    end_date=end_date
+                )
+                successful_data, failed_symbols = fetcher.fetch_batch(symbol_list)
+            elif market == "crypto":
+                fetcher = CryptoDataFetcher(
+                    ticker="",  # Not used in batch mode
+                    start_date=start_date,
+                    end_date=end_date
+                )
+                successful_data, failed_symbols = fetcher.fetch_batch(symbol_list)
+            else:
+                click.echo(f"✗ Batch mode not supported for market: {market}", err=True)
+                sys.exit(1)
 
-        # Fetch data
-        df = fetcher.fetch()
+            # Save all successful downloads
+            file_manager = FileManager(base_data_dir=market_dir)
+            saved_files = []
 
-        if df is None or df.empty:
-            click.echo("✗ No data returned", err=True)
-            sys.exit(1)
+            for symbol, df in successful_data.items():
+                actual_end_date = end_date or df.index[-1].strftime("%Y-%m-%d")
+                filepath = file_manager.save_to_csv(
+                    df=df,
+                    ticker=symbol,
+                    start_date=start_date,
+                    end_date=actual_end_date,
+                    overwrite=True
+                )
+                saved_files.append((symbol, filepath, len(df)))
 
-        # Create market-specific subdirectory
-        if market == "us":
-            market_dir = f"{output_dir}/us_stock"
-        elif market == "tw":
-            market_dir = f"{output_dir}/tw_stock"
-        elif market == "crypto":
-            market_dir = f"{output_dir}/crypto"
-        elif market == "forex":
-            market_dir = f"{output_dir}/forex"
-        elif market == "vix":
-            market_dir = f"{output_dir}/vix"
-        else:
-            market_dir = output_dir
+            # Display summary
+            if saved_files:
+                click.echo(f"\n✓ Successfully downloaded {len(saved_files)}/{len(symbol_list)} symbols:")
+                for symbol, filepath, rows in saved_files:
+                    click.echo(f"  • {symbol}: {rows} rows → {Path(filepath).name}")
 
-        # Save using FileManager
-        file_manager = FileManager(base_data_dir=market_dir)
+            if failed_symbols:
+                click.echo(f"\n✗ Failed to download {len(failed_symbols)} symbol(s):")
+                for symbol in failed_symbols:
+                    click.echo(f"  • {symbol}")
+                sys.exit(1)
 
-        # Determine actual end date for filename
-        actual_end_date = end_date or df.index[-1].strftime("%Y-%m-%d")
-
-        filepath = file_manager.save_to_csv(
-            df=df,
-            ticker=symbol,
-            start_date=start_date,
-            end_date=actual_end_date,
-            overwrite=True
-        )
-
-        click.echo(f"✓ Data saved to {filepath}")
-        click.echo(f"  Rows: {len(df)}")
-        click.echo(f"  Columns: {', '.join(df.columns)}")
-        click.echo(f"  Date range: {df.index[0]} to {df.index[-1]}")
+            if not saved_files:
+                click.echo("\n✗ No symbols were successfully downloaded", err=True)
+                sys.exit(1)
 
     except Exception as e:
-        click.echo(f"✗ Failed to fetch data: {e}", err=True)
+        click.echo(f"\n✗ Failed to fetch data: {e}", err=True)
         logger.exception("Error in fetch command")
         sys.exit(1)
 

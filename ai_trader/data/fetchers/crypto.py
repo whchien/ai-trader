@@ -195,6 +195,146 @@ class CryptoDataFetcher:
         # Should not reach here due to exceptions, but just in case
         return None
 
+    def fetch_batch(self, tickers: list[str]) -> tuple[dict[str, pd.DataFrame], list[str]]:
+        """
+        Fetch data for multiple cryptocurrencies efficiently.
+
+        Uses yfinance's multi-ticker download to fetch all tickers in a single API call,
+        which is much faster than individual requests.
+
+        Args:
+            tickers: List of cryptocurrency ticker symbols (e.g., ['BTC-USD', 'ETH-USD', 'SOL-USD'])
+
+        Returns:
+            Tuple of (successful_data, failed_tickers):
+            - successful_data: Dict mapping ticker -> DataFrame with OHLCV data
+            - failed_tickers: List of tickers that failed to download
+
+        Example:
+            >>> fetcher = CryptoDataFetcher(ticker="", start_date="2024-01-01")
+            >>> data, failed = fetcher.fetch_batch(['BTC-USD', 'ETH-USD', 'SOL-USD'])
+            >>> print(f"Downloaded {len(data)} cryptos, {len(failed)} failed")
+        """
+        if not tickers:
+            logger.warning("fetch_batch called with empty ticker list")
+            return {}, []
+
+        logger.info(f"Fetching batch of {len(tickers)} cryptocurrencies: {tickers}")
+
+        successful_data = {}
+        failed_tickers = []
+
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                # Download all tickers in one API call (space-separated)
+                tickers_str = " ".join(tickers)
+                logger.debug(f"Downloading: {tickers_str} (attempt {attempt}/{self.max_retries})")
+
+                df = yf.download(
+                    tickers_str,
+                    start=self.start_date,
+                    end=self.end_date,
+                    progress=False,
+                    auto_adjust=False,
+                    actions=False,
+                    group_by='ticker'  # Group by ticker for easier splitting
+                )
+
+                if df.empty:
+                    logger.warning("yfinance returned empty DataFrame for all tickers")
+                    if attempt == self.max_retries:
+                        failed_tickers = tickers.copy()
+                        return {}, failed_tickers
+                    continue
+
+                # Handle single vs multiple tickers
+                if len(tickers) == 1:
+                    # Single ticker: df has simple columns (Open, High, Low, ...)
+                    ticker = tickers[0]
+                    try:
+                        # Normalize columns to lowercase
+                        df.columns = df.columns.str.lower()
+                        df.index.name = 'date'
+
+                        # Check for all-NaN data (invalid ticker)
+                        if df[['open', 'high', 'low', 'close']].isna().all().all():
+                            logger.warning(f"Ticker {ticker} has no valid data (all NaN)")
+                            failed_tickers.append(ticker)
+                        else:
+                            successful_data[ticker] = df
+                            logger.info(
+                                f"Successfully fetched {ticker}: {len(df)} rows "
+                                f"from {df.index[0]} to {df.index[-1]}"
+                            )
+                    except Exception as e:
+                        logger.warning(f"Failed to process {ticker}: {e}")
+                        failed_tickers.append(ticker)
+                else:
+                    # Multiple tickers: df has MultiIndex columns (ticker, column_name)
+                    for ticker in tickers:
+                        try:
+                            # Extract data for this ticker
+                            if ticker in df.columns.get_level_values(0):
+                                ticker_df = df[ticker].copy()
+
+                                # Normalize columns to lowercase
+                                ticker_df.columns = ticker_df.columns.str.lower()
+                                ticker_df.index.name = 'date'
+
+                                # Check for all-NaN data (invalid ticker)
+                                if ticker_df[['open', 'high', 'low', 'close']].isna().all().all():
+                                    logger.warning(f"Ticker {ticker} has no valid data (all NaN)")
+                                    failed_tickers.append(ticker)
+                                    continue
+
+                                successful_data[ticker] = ticker_df
+                                logger.info(
+                                    f"Successfully fetched {ticker}: {len(ticker_df)} rows "
+                                    f"from {ticker_df.index[0]} to {ticker_df.index[-1]}"
+                                )
+                            else:
+                                logger.warning(f"Ticker {ticker} not found in downloaded data")
+                                failed_tickers.append(ticker)
+                        except Exception as e:
+                            logger.warning(f"Failed to process {ticker}: {e}")
+                            failed_tickers.append(ticker)
+
+                # If we got here successfully, break the retry loop
+                logger.info(
+                    f"Batch fetch complete: {len(successful_data)} succeeded, "
+                    f"{len(failed_tickers)} failed"
+                )
+                return successful_data, failed_tickers
+
+            except YFException as e:
+                logger.warning(
+                    f"Yahoo Finance error during batch fetch "
+                    f"(attempt {attempt}/{self.max_retries}): {e}"
+                )
+                if attempt == self.max_retries:
+                    logger.error(f"Failed to fetch batch after {self.max_retries} attempts")
+                    failed_tickers = tickers.copy()
+                    return {}, failed_tickers
+
+            except Exception as e:
+                logger.warning(
+                    f"Unexpected error during batch fetch "
+                    f"(attempt {attempt}/{self.max_retries}): {e}"
+                )
+                if attempt == self.max_retries:
+                    logger.error(f"Failed to fetch batch after {self.max_retries} attempts: {e}")
+                    failed_tickers = tickers.copy()
+                    return {}, failed_tickers
+
+            # Wait before retrying (exponential backoff)
+            if attempt < self.max_retries:
+                delay = self.retry_delay * (2 ** (attempt - 1))
+                logger.debug(f"Retrying batch in {delay} seconds...")
+                time.sleep(delay)
+
+        # Should not reach here, but just in case
+        return successful_data, failed_tickers
+
     def validate_crypto_data(
         self,
         df: pd.DataFrame,

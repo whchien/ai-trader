@@ -5,7 +5,7 @@
 
 [中文版說明 (Chinese Subpage)](README_zh.md)
 
-A comprehensive backtesting framework for algorithmic trading strategies built on Backtrader. Test and optimize your trading strategies across US stocks, Taiwan stocks, and cryptocurrencies.
+A comprehensive backtesting framework for algorithmic trading strategies built on Backtrader. Test and optimize your trading strategies across US stocks, Taiwan stocks, cryptocurrencies, and forex markets.
 
 **Version 0.2.0** introduces a new architecture with utility functions, CLI tools, and config-driven workflows for professional backtesting.
 
@@ -17,7 +17,7 @@ A comprehensive backtesting framework for algorithmic trading strategies built o
 - **Utility Functions** - Simple helpers for common tasks
 - **Config-Driven** - Version-controlled, reproducible backtests
 - **20+ Strategies** - Ready-to-use trading strategies
-- **Multi-Market** - US stocks, TW stocks, and crypto support
+- **Multi-Market** - US stocks, TW stocks, crypto, and forex support
 - **Rich Examples** - 5 example scripts and 4 config templates
 
 ## Strategy overview
@@ -148,7 +148,34 @@ ai-trader fetch 2330 --market tw --start-date 2020-01-01
 
 # Cryptocurrency
 ai-trader fetch BTC-USD --market crypto --start-date 2020-01-01
+
+# Forex (foreign exchange)
+ai-trader fetch EURUSD=X --market forex --start-date 2020-01-01
 ```
+
+**Using Python API:**
+```python
+from ai_trader.data.fetchers import ForexDataFetcher
+
+# Fetch EUR/USD data
+fetcher = ForexDataFetcher(
+    symbol="EURUSD=X",
+    start_date="2020-01-01",
+    end_date="2024-12-31"
+)
+df = fetcher.fetch()
+print(df.head())
+
+# Common forex pairs
+# EUR/USD: 'EURUSD=X'
+# GBP/USD: 'GBPUSD=X'
+# USD/JPY: 'JPY=X'
+# USD/CHF: 'CHF=X'
+# USD/CAD: 'CAD=X'
+# AUD/USD: 'AUDUSD=X'
+```
+
+**Note:** Forex data has zero volume because the forex market is decentralized with no centralized exchange providing volume data.
 
 ## CLI Reference
 
@@ -165,7 +192,7 @@ ai-trader quick <StrategyName> <data_file> [options]
 ai-trader list-strategies [--type classic|portfolio|all]
 
 # Fetch market data
-ai-trader fetch <symbol> --market <us|tw|crypto> [--start-date YYYY-MM-DD] [--end-date YYYY-MM-DD]
+ai-trader fetch <symbol> --market <us|tw|crypto|forex> [--start-date YYYY-MM-DD] [--end-date YYYY-MM-DD]
 
 # Show help
 ai-trader --help

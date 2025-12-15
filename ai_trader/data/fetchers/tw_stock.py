@@ -157,3 +157,102 @@ class TWStockFetcher(BaseFetcher):
                 symbol=self.symbol,
                 source="twstock"
             ) from e
+
+    def fetch_batch(self, symbols: list[str]) -> tuple[dict[str, pd.DataFrame], list[str]]:
+        """
+        Fetch data for multiple Taiwan stocks.
+
+        Note: twstock library doesn't support batch operations, so this iterates
+        through symbols sequentially. The SSL monkey-patch is applied once for
+        all downloads to minimize overhead.
+
+        Args:
+            symbols: List of stock IDs (e.g., ['2330', '2317', '2454'])
+
+        Returns:
+            Tuple of (successful_data, failed_symbols):
+            - successful_data: Dict mapping symbol -> DataFrame with OHLCV data
+            - failed_symbols: List of symbols that failed to download
+
+        Example:
+            >>> fetcher = TWStockFetcher(symbol="", start_date="2020-01-01")
+            >>> data, failed = fetcher.fetch_batch(['2330', '2317'])
+            >>> print(f"Downloaded {len(data)} stocks, {len(failed)} failed")
+        """
+        if not symbols:
+            logger.warning("fetch_batch called with empty symbol list")
+            return {}, []
+
+        logger.info(f"Fetching batch of {len(symbols)} TW stocks: {symbols}")
+
+        successful_data = {}
+        failed_symbols = []
+
+        # Monkey-patch requests once for all downloads
+        import requests
+        original_get = requests.get
+
+        def patched_get(*args, **kwargs):
+            kwargs['verify'] = False
+            return original_get(*args, **kwargs)
+
+        requests.get = patched_get
+
+        try:
+            for symbol in symbols:
+                try:
+                    logger.debug(f"Fetching TW stock: {symbol}")
+
+                    # Fetch from twstock
+                    stock = Stock(symbol)
+                    stock.fetch_from(year=self.start_year, month=self.start_month)
+
+                    if not stock.data:
+                        logger.warning(f"No data returned for {symbol}")
+                        failed_symbols.append(symbol)
+                        continue
+
+                    # Convert to DataFrame
+                    data_dicts = [d._asdict() for d in stock.data]
+                    df = pd.DataFrame(data_dicts)
+
+                    # Select and rename columns
+                    df = df[["date", "open", "high", "low", "close", "capacity"]]
+                    df = df.rename(columns={"capacity": "volume"})
+
+                    # Set date as index
+                    df['date'] = pd.to_datetime(df['date'])
+                    df = df.set_index('date')
+
+                    # Filter by end_date if provided
+                    if self.end_date:
+                        end_dt = pd.to_datetime(self.end_date)
+                        df = df[df.index <= end_dt]
+
+                    # Validate
+                    self._validate_dataframe(df, symbol)
+
+                    successful_data[symbol] = df
+                    logger.info(
+                        f"Successfully fetched {symbol}: {len(df)} rows "
+                        f"from {df.index[0]} to {df.index[-1]}"
+                    )
+
+                except (ConnectionError, TimeoutError) as e:
+                    logger.warning(f"Network error fetching {symbol}: {e}")
+                    failed_symbols.append(symbol)
+                except Exception as e:
+                    logger.warning(f"Failed to fetch {symbol}: {e}")
+                    failed_symbols.append(symbol)
+
+        finally:
+            # Always restore original requests.get
+            requests.get = original_get
+            logger.debug("Restored original requests.get")
+
+        logger.info(
+            f"Batch fetch complete: {len(successful_data)} succeeded, "
+            f"{len(failed_symbols)} failed"
+        )
+
+        return successful_data, failed_symbols
