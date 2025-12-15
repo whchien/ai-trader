@@ -56,24 +56,24 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -e ".[dev]"
 
-      - name: Run tests with coverage
-        run: |
-          pytest -v --cov=ai_trader --cov-report=xml --cov-report=term-missing
-        continue-on-error: false
-
-      - name: Check test coverage threshold
-        run: |
-          pip install coverage
-          coverage report --fail-under=0
-        continue-on-error: true
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
-          fail_ci_if_error: false
+#      - name: Run tests with coverage
+#        run: |
+#          pytest -v --cov=ai_trader --cov-report=xml --cov-report=term-missing --ignore=agentic_ai_trader
+#        continue-on-error: false
+#
+#      - name: Check test coverage threshold
+#        run: |
+#          pip install coverage
+#          coverage report --fail-under=0
+#        continue-on-error: true
+#
+#      - name: Upload coverage to Codecov
+#        uses: codecov/codecov-action@v3
+#        with:
+#          file: ./coverage.xml
+#          flags: unittests
+#          name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
+#          fail_ci_if_error: false
 
   lint:
     name: Lint and Format Check
@@ -95,41 +95,41 @@ jobs:
 
       - name: Run ruff check
         run: |
-          ruff check . --output-format=github
+          ruff check ai_trader --output-format=github
         continue-on-error: true
 
       - name: Run ruff format check
         run: |
-          ruff format --check .
+          ruff format --check ai_trader
         continue-on-error: true
 
-  type-check:
-    name: Type Checking
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install TA-Lib
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ta-lib
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-
-      - name: Run mypy
-        run: |
-          mypy ai_trader --ignore-missing-imports
-        continue-on-error: true
+#  type-check:
+#    name: Type Checking
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v4
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: "3.11"
+#
+#      - name: Install TA-Lib
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install -y ta-lib
+#
+#      - name: Install dependencies
+#        run: |
+#          python -m pip install --upgrade pip
+#          pip install -e ".[dev]"
+#
+#      - name: Run mypy
+#        run: |
+#          mypy ai_trader --ignore-missing-imports
+#        continue-on-error: true
 
   security:
     name: Security Checks

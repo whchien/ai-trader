@@ -24,7 +24,6 @@ from data_science.utils.utils import get_env_var
 
 
 def return_instructions_bigquery() -> str:
-
     NL2SQL_METHOD = os.getenv("NL2SQL_METHOD", "BASELINE")
     if NL2SQL_METHOD == "BASELINE" or NL2SQL_METHOD == "CHASE":
         nl2sql_tool_name = "initial_bq_nl2sql"

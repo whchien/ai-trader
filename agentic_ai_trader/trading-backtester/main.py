@@ -18,17 +18,17 @@ def main():
     try:
         # Validate configuration
         config.validate()
-        
+
         logger.info("Trading Backtester initialized successfully")
         logger.info(f"Using model: {config.get_model('root_agent')}")
         logger.info(f"Default cash: ${config.get('backtesting.default_cash'):,}")
-        
+
         # The agent is ready to be used by ADK
         print("Trading Backtester Agent is ready!")
         print("Use 'adk run trading_backtester' or 'adk web' to interact with the agent.")
-        
+
         return root_agent
-        
+
     except Exception as e:
         logger.error(f"Failed to initialize Trading Backtester: {e}")
         raise

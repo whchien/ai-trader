@@ -20,12 +20,10 @@ class RsiBollingerBandsStrategy(BaseStrategy):
 
     def next(self):
         buy_signal = (
-            self.rsi < self.params.oversold
-            and self.data.close[0] <= self.bbands.lines.bot[0]
+            self.rsi < self.params.oversold and self.data.close[0] <= self.bbands.lines.bot[0]
         )
         close_signal = (
-            self.rsi > self.params.overbought
-            or self.data.close[0] >= self.bbands.lines.top[0]
+            self.rsi > self.params.overbought or self.data.close[0] >= self.bbands.lines.top[0]
         )
 
         if self.position.size == 0:

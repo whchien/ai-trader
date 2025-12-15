@@ -3,7 +3,6 @@ File management for market data CSV operations.
 """
 
 import logging
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -61,12 +60,7 @@ class FileManager:
         return filename
 
     def save_to_csv(
-        self,
-        df: pd.DataFrame,
-        ticker: str,
-        start_date: str,
-        end_date: str,
-        overwrite: bool = True
+        self, df: pd.DataFrame, ticker: str, start_date: str, end_date: str, overwrite: bool = True
     ) -> str:
         """
         Save DataFrame to CSV file.
@@ -106,14 +100,13 @@ class FileManager:
             df.to_csv(filepath, index=True)
             file_size = filepath.stat().st_size
             self.logger.info(
-                f"Saved {ticker} data to {filepath} "
-                f"({len(df)} rows, {file_size:,} bytes)"
+                f"Saved {ticker} data to {filepath} ({len(df)} rows, {file_size:,} bytes)"
             )
             return str(filepath)
 
         except Exception as e:
             self.logger.error(f"Failed to save {ticker} data to {filepath}: {e}")
-            raise IOError(f"Failed to write file {filepath}: {e}") from e
+            raise OSError(f"Failed to write file {filepath}: {e}") from e
 
     def load_from_csv(self, filepath: str, parse_dates: bool = True) -> pd.DataFrame:
         """
@@ -137,9 +130,7 @@ class FileManager:
 
         try:
             df = pd.read_csv(
-                filepath,
-                index_col=0,
-                parse_dates=parse_dates if parse_dates else False
+                filepath, index_col=0, parse_dates=parse_dates if parse_dates else False
             )
             self.logger.info(f"Loaded {len(df)} rows from {filepath}")
             return df
@@ -217,11 +208,7 @@ class FileManager:
             Dictionary with directory statistics
         """
         if not self.base_data_dir.exists():
-            return {
-                "exists": False,
-                "file_count": 0,
-                "total_size": 0
-            }
+            return {"exists": False, "file_count": 0, "total_size": 0}
 
         csv_files = list(self.base_data_dir.glob("*.csv"))
         total_size = sum(f.stat().st_size for f in csv_files)
@@ -230,5 +217,5 @@ class FileManager:
             "exists": True,
             "file_count": len(csv_files),
             "total_size": total_size,
-            "files": [f.name for f in csv_files]
+            "files": [f.name for f in csv_files],
         }

@@ -16,10 +16,7 @@ from ai_trader.backtesting.strategies.classic.rsi import (
     TripleRsiStrategy,
 )
 from ai_trader.backtesting.strategies.classic.rsrs import RSRSStrategy
-from ai_trader.backtesting.strategies.classic.sma import (
-    CrossSMAStrategy,
-    NaiveSMAStrategy,
-)
+from ai_trader.backtesting.strategies.classic.sma import CrossSMAStrategy, NaiveSMAStrategy
 from ai_trader.backtesting.strategies.classic.turtle import TurtleTradingStrategy
 from ai_trader.backtesting.strategies.classic.vcp import VCPStrategy
 

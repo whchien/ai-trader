@@ -5,6 +5,7 @@ Compare multiple strategies example.
 This example shows how to run multiple strategies on the same data
 and compare their performance.
 """
+
 from ai_trader.backtesting.strategies.classic.bbands import BBandsStrategy
 from ai_trader.backtesting.strategies.classic.buyhold import BuyHoldStrategy
 from ai_trader.backtesting.strategies.classic.macd import MACDStrategy

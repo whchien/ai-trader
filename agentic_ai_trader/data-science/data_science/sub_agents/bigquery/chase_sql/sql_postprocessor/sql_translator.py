@@ -26,7 +26,6 @@ from .correction_prompt_template import (
     CORRECTION_PROMPT_TEMPLATE_V1_0,
 )  # pylint: disable=g-importing-member
 
-
 ColumnSchemaType = tuple[str, str]
 AllColumnsSchemaType = list[ColumnSchemaType]
 TableSchemaType = tuple[str, AllColumnsSchemaType]
@@ -209,17 +208,13 @@ class SqlTranslator:
         for ddl_statement in ddl_statements:
             if ddl_statement:
                 ddl_statement = ddl_statement.strip() + ";"  # Add the semicolon back.
-                table_name, columns = cls._extract_schema_from_ddl_statement(
-                    ddl_statement
-                )
+                table_name, columns = cls._extract_schema_from_ddl_statement(ddl_statement)
                 if table_name and columns:
                     schema.append((table_name, columns))
         return schema
 
     @classmethod
-    def _get_schema_from_bird_sample(
-        cls, sample: BirdSampleType
-    ) -> dict[str, dict[str, str]]:
+    def _get_schema_from_bird_sample(cls, sample: BirdSampleType) -> dict[str, dict[str, str]]:
         """Returns the schema from the Bird dataset example."""
         col_types_map: dict[str, str] = {
             "text": "TEXT",
@@ -240,9 +235,7 @@ class SqlTranslator:
         tables_to_columns: dict[str, dict[str, str]] = {}
         for id_pos, table_id in enumerate(table_ids):
             if tables[table_id] in tables_to_columns.keys():
-                tables_to_columns[tables[table_id]].update(
-                    dict([cols_and_types[id_pos]])
-                )
+                tables_to_columns[tables[table_id]].update(dict([cols_and_types[id_pos]]))
             else:
                 tables_to_columns[tables[table_id]] = dict([cols_and_types[id_pos]])
         return tables_to_columns
@@ -451,9 +444,7 @@ class SqlTranslator:
             read=self.INPUT_DIALECT,
             write=self.OUTPUT_DIALECT,
             error_level=sqlglot.ErrorLevel.IMMEDIATE,
-        )[
-            0
-        ]  # Transpile returns a list of strings.
+        )[0]  # Transpile returns a list of strings.
         print("****** sql_query after transpile:", sql_query)
         if self._tool_output_errors:
             sql_query = self._fix_errors(

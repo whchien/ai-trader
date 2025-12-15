@@ -53,9 +53,7 @@ class BaseStrategy(bt.Strategy):
                 padded_detail2 = f"{detail2_str:<{self.COL_WIDTH_DETAIL2}}"
                 padded_detail3 = f"{detail3_str:<{self.COL_WIDTH_DETAIL3}}"
 
-                self.log(
-                    f"{action_str} │ {padded_detail1} │ {padded_detail2} │ {padded_detail3}"
-                )
+                self.log(f"{action_str} │ {padded_detail1} │ {padded_detail2} │ {padded_detail3}")
             elif order.issell():
                 action_str = f"{'▼ SELL':<{self.COL_WIDTH_ACTION}}"
                 detail1_str = f"Price: ${order.executed.price:>8.2f}"
@@ -67,9 +65,7 @@ class BaseStrategy(bt.Strategy):
                 padded_detail2 = f"{detail2_str:<{self.COL_WIDTH_DETAIL2}}"
                 padded_detail3 = f"{detail3_str:<{self.COL_WIDTH_DETAIL3}}"
 
-                self.log(
-                    f"{action_str} │ {padded_detail1} │ {padded_detail2} │ {padded_detail3}"
-                )
+                self.log(f"{action_str} │ {padded_detail1} │ {padded_detail2} │ {padded_detail3}")
             self.bar_executed = len(self)
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
@@ -85,11 +81,10 @@ class BaseStrategy(bt.Strategy):
 
             # Pad the detail string
             padded_detail1 = f"{detail1_str:<{self.COL_WIDTH_DETAIL1}}"
-            padded_detail2 = f"{'':<{self.COL_WIDTH_DETAIL2}}" # Empty for this type of log
-            padded_detail3 = f"{'':<{self.COL_WIDTH_DETAIL3}}" # Empty for this type of log
+            padded_detail2 = f"{'':<{self.COL_WIDTH_DETAIL2}}"  # Empty for this type of log
+            padded_detail3 = f"{'':<{self.COL_WIDTH_DETAIL3}}"  # Empty for this type of log
 
             self.log(f"{action_str} │ {padded_detail1} │ {padded_detail2} │ {padded_detail3}")
-
 
         # Write down: no pending order
         self.order = None
@@ -108,8 +103,6 @@ class BaseStrategy(bt.Strategy):
 
         padded_detail1 = f"{detail1_str:<{self.COL_WIDTH_DETAIL1}}"
         padded_detail2 = f"{detail2_str:<{self.COL_WIDTH_DETAIL2}}"
-        padded_detail3 = f"{'':<{self.COL_WIDTH_DETAIL3}}" # Empty for P&L logs
+        padded_detail3 = f"{'':<{self.COL_WIDTH_DETAIL3}}"  # Empty for P&L logs
 
-        self.log(
-            f"{action_str} │ {padded_detail1} │ {padded_detail2} │ {padded_detail3}"
-        )
+        self.log(f"{action_str} │ {padded_detail1} │ {padded_detail2} │ {padded_detail3}")

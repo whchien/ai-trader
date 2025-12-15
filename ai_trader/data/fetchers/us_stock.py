@@ -29,12 +29,7 @@ class USStockFetcher(BaseFetcher):
         >>> print(df.head())
     """
 
-    def __init__(
-        self,
-        symbol: str,
-        start_date: str,
-        end_date: Optional[str] = None
-    ):
+    def __init__(self, symbol: str, start_date: str, end_date: Optional[str] = None):
         """
         Initialize US stock data fetcher.
 
@@ -76,14 +71,12 @@ class USStockFetcher(BaseFetcher):
                 start=self.start_date,
                 end=self.end_date,
                 progress=False,
-                auto_adjust=False  # Keep both Close and Adj Close
+                auto_adjust=False,  # Keep both Close and Adj Close
             )
 
             if df.empty:
                 raise DataFetchError(
-                    f"No data returned for {self.symbol}",
-                    symbol=self.symbol,
-                    source="yfinance"
+                    f"No data returned for {self.symbol}", symbol=self.symbol, source="yfinance"
                 )
 
             # Reset index to make Date a column
@@ -105,17 +98,13 @@ class USStockFetcher(BaseFetcher):
 
         except (ConnectionError, TimeoutError) as e:
             raise DataFetchError(
-                f"Network error fetching {self.symbol}: {e}",
-                symbol=self.symbol,
-                source="yfinance"
+                f"Network error fetching {self.symbol}: {e}", symbol=self.symbol, source="yfinance"
             ) from e
         except Exception as e:
             if isinstance(e, (DataFetchError, DataValidationError)):
                 raise
             raise DataFetchError(
-                f"Failed to fetch {self.symbol}: {e}",
-                symbol=self.symbol,
-                source="yfinance"
+                f"Failed to fetch {self.symbol}: {e}", symbol=self.symbol, source="yfinance"
             ) from e
 
     def fetch_batch(self, symbols: list[str]) -> tuple[dict[str, pd.DataFrame], list[str]]:
@@ -158,7 +147,7 @@ class USStockFetcher(BaseFetcher):
                 end=self.end_date,
                 progress=False,
                 auto_adjust=False,
-                group_by='ticker'  # Group by ticker for easier splitting
+                group_by="ticker",  # Group by ticker for easier splitting
             )
 
             if df.empty:
@@ -192,7 +181,7 @@ class USStockFetcher(BaseFetcher):
                             symbol_df = self._normalize_columns(symbol_df)
 
                             # Check for all-NaN data (invalid symbols)
-                            if symbol_df[['open', 'high', 'low', 'close']].isna().all().all():
+                            if symbol_df[["open", "high", "low", "close"]].isna().all().all():
                                 logger.warning(f"Symbol {symbol} has no valid data (all NaN)")
                                 failed_symbols.append(symbol)
                                 continue
@@ -219,8 +208,7 @@ class USStockFetcher(BaseFetcher):
             failed_symbols = symbols.copy()
 
         logger.info(
-            f"Batch fetch complete: {len(successful_data)} succeeded, "
-            f"{len(failed_symbols)} failed"
+            f"Batch fetch complete: {len(successful_data)} succeeded, {len(failed_symbols)} failed"
         )
 
         return successful_data, failed_symbols

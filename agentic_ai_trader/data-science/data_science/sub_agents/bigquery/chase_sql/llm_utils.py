@@ -24,8 +24,7 @@ from typing import Callable, List, Optional
 import dotenv
 import vertexai
 from google.cloud import aiplatform
-from vertexai.generative_models import (GenerationConfig, HarmBlockThreshold,
-                                        HarmCategory)
+from vertexai.generative_models import GenerationConfig, HarmBlockThreshold, HarmCategory
 from vertexai.preview import caching
 from vertexai.preview.generative_models import GenerativeModel
 
@@ -69,9 +68,7 @@ GEMINI_AVAILABLE_REGIONS = [
     "asia-southeast1",
     "southamerica-east1",
 ]
-GEMINI_URL = (
-    "projects/{GCP_PROJECT}/locations/{region}/publishers/google/models/{model_name}"
-)
+GEMINI_URL = "projects/{GCP_PROJECT}/locations/{region}/publishers/google/models/{model_name}"
 
 aiplatform.init(
     project=GCP_PROJECT,
@@ -141,9 +138,7 @@ class GeminiModel:
             )
         if cache_name is not None:
             cached_content = caching.CachedContent(cached_content_name=cache_name)
-            self.model = GenerativeModel.from_cached_content(
-                cached_content=cached_content
-            )
+            self.model = GenerativeModel.from_cached_content(cached_content=cached_content)
         else:
             self.model = GenerativeModel(model_name=model_name)
 
@@ -211,8 +206,7 @@ class GeminiModel:
         # Create and start one thread for each prompt
         with ThreadPoolExecutor(max_workers=len(prompts)) as executor:
             future_to_index = {
-                executor.submit(worker, i, prompt): i
-                for i, prompt in enumerate(prompts)
+                executor.submit(worker, i, prompt): i for i, prompt in enumerate(prompts)
             }
 
             for future in as_completed(future_to_index, timeout=timeout):

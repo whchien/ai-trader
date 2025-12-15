@@ -34,9 +34,7 @@ class MACDStrategy(BaseStrategy):
         }
 
         self.macd = bt.talib.MACDEXT(self.data0.close, **kwargs)
-        self.crossover = bt.indicators.CrossOver(
-            self.macd.macd, self.macd.macdsignal, plot=False
-        )
+        self.crossover = bt.indicators.CrossOver(self.macd.macd, self.macd.macdsignal, plot=False)
         self.above = bt.And(self.macd.macd > 0.0, self.macd.macdsignal > 0.0)
         self.buy_signal = bt.And(self.above, self.crossover == 1)
         self.sell_signal = self.crossover == -1

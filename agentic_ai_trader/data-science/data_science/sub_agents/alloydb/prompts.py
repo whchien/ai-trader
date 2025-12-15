@@ -20,7 +20,6 @@ agent. These instructions guide the agent's behavior, workflow, and tool usage.
 
 
 def return_instructions_alloydb() -> str:
-
     nl2sql_tool_name = "alloydb_nl2sql"
     db_query_tool_name = "run_alloydb_query"
 

@@ -1,4 +1,5 @@
 """Utility functions for ai-trader."""
+
 from ai_trader.utils.backtest import (
     add_analyzers,
     add_default_analyzers,

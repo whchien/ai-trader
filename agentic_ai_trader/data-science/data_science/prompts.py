@@ -20,7 +20,6 @@ These instructions guide the agent's behavior, workflow, and tool usage.
 
 
 def return_instructions_root() -> str:
-
     instruction_prompt_root = """
 
     You are a senior data scientist tasked to accurately classify the user's

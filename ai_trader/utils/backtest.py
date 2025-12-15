@@ -3,15 +3,14 @@
 This module provides helper functions to simplify common Backtrader operations
 without the overhead of a wrapper class.
 """
+
 import glob
-import os
 from pathlib import Path
 from typing import List, Optional, Type, Union
 
 import backtrader as bt
 import pandas as pd
 
-from ai_trader.backtesting.strategies.classic import NaiveSMAStrategy
 from ai_trader.core.logging import get_logger
 from ai_trader.core.utils import extract_ticker_from_path
 from ai_trader.data.fetchers.base import load_example

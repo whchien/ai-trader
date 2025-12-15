@@ -41,11 +41,7 @@ class VIXDataFetcher(BaseFetcher):
 
     VIX_SYMBOL = "^VIX"
 
-    def __init__(
-        self,
-        start_date: str,
-        end_date: Optional[str] = None
-    ):
+    def __init__(self, start_date: str, end_date: Optional[str] = None):
         """
         Initialize VIX data fetcher.
 
@@ -60,10 +56,7 @@ class VIXDataFetcher(BaseFetcher):
         self.start_date = start_date
         self.end_date = end_date
 
-        logger.info(
-            f"Initialized VIXDataFetcher: "
-            f"start={start_date}, end={end_date or 'today'}"
-        )
+        logger.info(f"Initialized VIXDataFetcher: start={start_date}, end={end_date or 'today'}")
 
     def fetch(self) -> pd.DataFrame:
         """
@@ -77,7 +70,7 @@ class VIXDataFetcher(BaseFetcher):
             DataFetchError: If download fails
             DataValidationError: If data is invalid
         """
-        logger.info(f"Fetching VIX index data")
+        logger.info("Fetching VIX index data")
 
         try:
             # Download from yfinance
@@ -86,14 +79,12 @@ class VIXDataFetcher(BaseFetcher):
                 start=self.start_date,
                 end=self.end_date,
                 progress=False,
-                auto_adjust=False  # Keep both Close and Adj Close
+                auto_adjust=False,  # Keep both Close and Adj Close
             )
 
             if df.empty:
                 raise DataFetchError(
-                    f"No data returned for VIX index",
-                    symbol=self.symbol,
-                    source="yfinance"
+                    "No data returned for VIX index", symbol=self.symbol, source="yfinance"
                 )
 
             # Reset index to make Date a column
@@ -106,23 +97,18 @@ class VIXDataFetcher(BaseFetcher):
             self._validate_dataframe(df, self.symbol)
 
             logger.info(
-                f"Successfully fetched {len(df)} rows for VIX "
-                f"from {df.index[0]} to {df.index[-1]}"
+                f"Successfully fetched {len(df)} rows for VIX from {df.index[0]} to {df.index[-1]}"
             )
 
             return df
 
         except (ConnectionError, TimeoutError) as e:
             raise DataFetchError(
-                f"Network error fetching VIX: {e}",
-                symbol=self.symbol,
-                source="yfinance"
+                f"Network error fetching VIX: {e}", symbol=self.symbol, source="yfinance"
             ) from e
         except Exception as e:
             if isinstance(e, (DataFetchError, DataValidationError)):
                 raise
             raise DataFetchError(
-                f"Failed to fetch VIX: {e}",
-                symbol=self.symbol,
-                source="yfinance"
+                f"Failed to fetch VIX: {e}", symbol=self.symbol, source="yfinance"
             ) from e

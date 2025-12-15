@@ -1,13 +1,12 @@
 """Base data fetcher for market data."""
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Literal
 
 import pandas as pd
 
-from ai_trader.core.exceptions import (
-    DataValidationError,
-)
+from ai_trader.core.exceptions import DataValidationError
 from ai_trader.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -53,19 +52,19 @@ class BaseFetcher(ABC):
 
         # Handle common variations
         column_mapping = {
-            'adj close': 'adj_close',
-            'capacity': 'volume'  # TW stock uses 'capacity'
+            "adj close": "adj_close",
+            "capacity": "volume",  # TW stock uses 'capacity'
         }
         df = df.rename(columns=column_mapping)
 
         # Ensure date is in the index
-        if 'date' in df.columns:
-            df['date'] = pd.to_datetime(df['date'])
-            df = df.set_index('date')
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"])
+            df = df.set_index("date")
 
         # Ensure index is named 'date'
-        if df.index.name is None or df.index.name != 'date':
-            df.index.name = 'date'
+        if df.index.name is None or df.index.name != "date":
+            df.index.name = "date"
 
         return df
 
@@ -82,24 +81,19 @@ class BaseFetcher(ABC):
             DataValidationError: If validation fails
         """
         if df.empty:
-            raise DataValidationError(
-                f"No data returned for {symbol}",
-                symbol=symbol
-            )
+            raise DataValidationError(f"No data returned for {symbol}", symbol=symbol)
 
         # Check for required columns
-        required = ['open', 'high', 'low', 'close']
+        required = ["open", "high", "low", "close"]
         if not skip_volume:
-            required.append('volume')
+            required.append("volume")
 
         df_cols = [col.lower() for col in df.columns]
         missing = [col for col in required if col not in df_cols]
 
         if missing:
             raise DataValidationError(
-                f"Missing required columns for {symbol}: {missing}",
-                symbol=symbol,
-                issues=missing
+                f"Missing required columns for {symbol}: {missing}", symbol=symbol, issues=missing
             )
 
         logger.debug(f"Validated data for {symbol}: {len(df)} rows")
@@ -123,10 +117,7 @@ def load_example(market: Literal["us", "tw"] = "tw") -> pd.DataFrame:
         >>> df = load_example(market="tw")
         >>> print(df.head())
     """
-    datapath = {
-        "tw": "data/tw_stock/2330.csv",
-        "us": "data/us_stock/tsm.csv"
-    }
+    datapath = {"tw": "data/tw_stock/2330.csv", "us": "data/us_stock/tsm.csv"}
 
     if market not in datapath:
         raise ValueError(f"Market only supports 'tw' or 'us', got '{market}'")

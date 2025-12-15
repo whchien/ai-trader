@@ -11,12 +11,8 @@ class MomentumStrategy(BaseStrategy):
     params = dict(sma_period=50, momentum_period=14)
 
     def __init__(self):
-        self.sma = bt.indicators.SimpleMovingAverage(
-            self.data.close, period=self.params.sma_period
-        )
-        self.momentum = bt.indicators.Momentum(
-            self.data.close, period=self.params.momentum_period
-        )
+        self.sma = bt.indicators.SimpleMovingAverage(self.data.close, period=self.params.sma_period)
+        self.momentum = bt.indicators.Momentum(self.data.close, period=self.params.momentum_period)
         self.buy_signal = self.momentum > 0
         self.close_signal = self.data.close < self.sma
 

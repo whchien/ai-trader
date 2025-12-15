@@ -41,12 +41,7 @@ class ForexDataFetcher(BaseFetcher):
         >>> print(df.head())
     """
 
-    def __init__(
-        self,
-        symbol: str,
-        start_date: str,
-        end_date: Optional[str] = None
-    ):
+    def __init__(self, symbol: str, start_date: str, end_date: Optional[str] = None):
         """
         Initialize forex data fetcher.
 
@@ -89,14 +84,12 @@ class ForexDataFetcher(BaseFetcher):
                 start=self.start_date,
                 end=self.end_date,
                 progress=False,
-                auto_adjust=False  # Keep both Close and Adj Close
+                auto_adjust=False,  # Keep both Close and Adj Close
             )
 
             if df.empty:
                 raise DataFetchError(
-                    f"No data returned for {self.symbol}",
-                    symbol=self.symbol,
-                    source="yfinance"
+                    f"No data returned for {self.symbol}", symbol=self.symbol, source="yfinance"
                 )
 
             # Reset index to make Date a column
@@ -121,15 +114,11 @@ class ForexDataFetcher(BaseFetcher):
 
         except (ConnectionError, TimeoutError) as e:
             raise DataFetchError(
-                f"Network error fetching {self.symbol}: {e}",
-                symbol=self.symbol,
-                source="yfinance"
+                f"Network error fetching {self.symbol}: {e}", symbol=self.symbol, source="yfinance"
             ) from e
         except Exception as e:
             if isinstance(e, (DataFetchError, DataValidationError)):
                 raise
             raise DataFetchError(
-                f"Failed to fetch {self.symbol}: {e}",
-                symbol=self.symbol,
-                source="yfinance"
+                f"Failed to fetch {self.symbol}: {e}", symbol=self.symbol, source="yfinance"
             ) from e

@@ -1,5 +1,5 @@
-from ai_trader.backtesting.strategies.indicators import RSRS
 from ai_trader.backtesting.strategies.base import BaseStrategy
+from ai_trader.backtesting.strategies.indicators import RSRS
 
 
 class RSRSRotationStrategy(BaseStrategy):

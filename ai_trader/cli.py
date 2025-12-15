@@ -1,4 +1,5 @@
 """Command-line interface for ai-trader."""
+
 import importlib
 import sys
 from pathlib import Path
@@ -46,7 +47,7 @@ def run(
         ai-trader run config/backtest/portfolio/triple_rsi_rotation_example.yaml --cash 500000
     """
     # Load config
-    with open(config_file, "r") as f:
+    with open(config_file) as f:
         config = yaml.safe_load(f)
 
     # Apply overrides
@@ -185,8 +186,14 @@ def list_strategies(strategy_type: str):
 
 @cli.command()
 @click.argument("symbols", nargs=-1, required=False)
-@click.option("--symbols-file", type=click.Path(exists=True), help="File containing symbols (one per line)")
-@click.option("--market", type=click.Choice(["us_stock", "tw_stock", "crypto", "forex", "vix"]), default="us_stock")
+@click.option(
+    "--symbols-file", type=click.Path(exists=True), help="File containing symbols (one per line)"
+)
+@click.option(
+    "--market",
+    type=click.Choice(["us_stock", "tw_stock", "crypto", "forex", "vix"]),
+    default="us_stock",
+)
 @click.option("--start-date", required=True, help="Start date (YYYY-MM-DD)")
 @click.option("--end-date", help="End date (YYYY-MM-DD), defaults to today")
 @click.option("--output-dir", help="Output directory", default="./data")
@@ -224,7 +231,7 @@ def fetch(
     from ai_trader.data.storage import FileManager
 
     # Factory mapping for fetcher classes
-    FETCHER_FACTORY = {
+    fetcher_factory = {
         "us_stock": (USStockFetcher, "symbol"),
         "tw_stock": (TWStockFetcher, "symbol"),
         "crypto": (CryptoDataFetcher, "ticker"),
@@ -239,7 +246,7 @@ def fetch(
     if symbols:
         for sym in symbols:
             # Handle comma-separated within single argument
-            symbol_list.extend(s.strip() for s in sym.split(',') if s.strip())
+            symbol_list.extend(s.strip() for s in sym.split(",") if s.strip())
 
     # From file
     if symbols_file:
@@ -255,7 +262,9 @@ def fetch(
         click.echo("\nExamples:")
         click.echo("  ai-trader fetch AAPL --market us_stock --start-date 2020-01-01")
         click.echo("  ai-trader fetch AAPL MSFT GOOGL --market us_stock --start-date 2020-01-01")
-        click.echo("  ai-trader fetch --symbols-file symbols.txt --market us_stock --start-date 2020-01-01")
+        click.echo(
+            "  ai-trader fetch --symbols-file symbols.txt --market us_stock --start-date 2020-01-01"
+        )
         sys.exit(1)
 
     # Remove duplicates while preserving order
@@ -277,11 +286,11 @@ def fetch(
             symbol = symbol_list[0]
 
             # Use factory to create fetcher
-            if market not in FETCHER_FACTORY:
+            if market not in fetcher_factory:
                 click.echo(f"✗ Invalid market: {market}", err=True)
                 sys.exit(1)
 
-            fetcher_class, symbol_param = FETCHER_FACTORY[market]
+            fetcher_class, symbol_param = fetcher_factory[market]
 
             # Build fetcher parameters
             fetcher_params = {
@@ -311,7 +320,7 @@ def fetch(
                 ticker=symbol,
                 start_date=start_date,
                 end_date=actual_end_date,
-                overwrite=True
+                overwrite=True,
             )
 
             click.echo(f"✓ Data saved to {filepath}")
@@ -321,7 +330,7 @@ def fetch(
 
         else:
             # Batch mode for US/TW stocks and crypto
-            if market not in FETCHER_FACTORY:
+            if market not in fetcher_factory:
                 click.echo(f"✗ Invalid market: {market}", err=True)
                 sys.exit(1)
 
@@ -330,7 +339,7 @@ def fetch(
                 click.echo(f"✗ Batch mode not supported for market: {market}", err=True)
                 sys.exit(1)
 
-            fetcher_class, symbol_param = FETCHER_FACTORY[market]
+            fetcher_class, symbol_param = fetcher_factory[market]
 
             # Build fetcher parameters for batch mode
             fetcher_params = {
@@ -353,13 +362,15 @@ def fetch(
                     ticker=symbol,
                     start_date=start_date,
                     end_date=actual_end_date,
-                    overwrite=True
+                    overwrite=True,
                 )
                 saved_files.append((symbol, filepath, len(df)))
 
             # Display summary
             if saved_files:
-                click.echo(f"\n✓ Successfully downloaded {len(saved_files)}/{len(symbol_list)} symbols:")
+                click.echo(
+                    f"\n✓ Successfully downloaded {len(saved_files)}/{len(symbol_list)} symbols:"
+                )
                 for symbol, filepath, rows in saved_files:
                     click.echo(f"  • {symbol}: {rows} rows → {Path(filepath).name}")
 
@@ -443,6 +454,7 @@ def _load_strategy_class(class_path: str):
         # Try to import from classic module (searches __init__.py exports)
         try:
             from ai_trader.backtesting.strategies import classic
+
             if hasattr(classic, class_path):
                 return getattr(classic, class_path)
         except (ImportError, AttributeError):
@@ -451,6 +463,7 @@ def _load_strategy_class(class_path: str):
         # Try to import from portfolio module (searches __init__.py exports)
         try:
             from ai_trader.backtesting.strategies import portfolio
+
             if hasattr(portfolio, class_path):
                 return getattr(portfolio, class_path)
         except (ImportError, AttributeError):
@@ -467,6 +480,7 @@ def _load_strategy_class(class_path: str):
 def _get_strategies_from_module(module):
     """Get all strategy classes from a module."""
     import inspect
+
     import backtrader as bt
 
     strategies = []

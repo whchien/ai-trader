@@ -5,6 +5,7 @@ Step-by-step backtest example.
 This example shows each step of the backtest process explicitly,
 giving you full control over configuration.
 """
+
 from ai_trader.backtesting.strategies.classic.bbands import BBandsStrategy
 from ai_trader.utils.backtest import (
     add_default_analyzers,

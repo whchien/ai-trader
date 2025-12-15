@@ -5,6 +5,7 @@ Simple backtest example using utility functions.
 This example shows how to run a quick backtest with the SMA strategy
 using the convenience function.
 """
+
 from ai_trader.backtesting.strategies.classic.sma import SMAStrategy
 from ai_trader.utils.backtest import run_backtest
 

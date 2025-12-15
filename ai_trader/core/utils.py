@@ -1,6 +1,8 @@
 """Utility functions for ai-trader."""
+
 import re
 from typing import List
+
 from ai_trader.core.logging import get_logger
 
 logger = get_logger(__name__)

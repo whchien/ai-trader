@@ -18,11 +18,12 @@ import logging
 import os
 import re
 
-from data_science.utils.utils import get_env_var
 from google.adk.tools import ToolContext
 from google.genai import Client
 from google.genai.types import HttpOptions
 from toolbox_core import ToolboxSyncClient, auth_methods
+
+from data_science.utils.utils import get_env_var
 
 from ...utils.utils import USER_AGENT
 
@@ -67,7 +68,7 @@ def get_toolbox_client():
             toolbox_client = ToolboxSyncClient(toolbox_url)
         else:
             toolbox_url = f"https://{MCP_TOOLBOX_HOST}"
-            if MCP_TOOLBOX_PORT is not "":
+            if MCP_TOOLBOX_PORT != "":
                 toolbox_url += f":{MCP_TOOLBOX_PORT}"
             logger.info("Connecting to remote MCP Toolbox at %s", toolbox_url)
             auth_token_provider = auth_methods.aget_google_id_token(toolbox_url)
@@ -96,9 +97,7 @@ def get_database_settings():
 
 def get_schema():
     get_schema_tool = get_toolbox_client().load_tool("list_tables")
-    schema = get_schema_tool(
-        schema_names=get_env_var("ALLOYDB_SCHEMA_NAME"), table_names=""
-    )
+    schema = get_schema_tool(schema_names=get_env_var("ALLOYDB_SCHEMA_NAME"), table_names="")
     return schema
 
 
@@ -279,9 +278,7 @@ def run_alloydb_query(
         r"(?i)(update|delete|drop|insert|create|alter|truncate|merge)",
         sql_string,
     ):
-        final_result["error_message"] = (
-            "Invalid SQL: Contains disallowed DML/DDL operations."
-        )
+        final_result["error_message"] = "Invalid SQL: Contains disallowed DML/DDL operations."
         return final_result
 
     try:
@@ -295,9 +292,7 @@ def run_alloydb_query(
             tool_context.state["alloydb_query_result"] = results
 
         else:
-            final_result["error_message"] = (
-                "Valid SQL. Query executed successfully (no results)."
-            )
+            final_result["error_message"] = "Valid SQL. Query executed successfully (no results)."
 
     except (
         # Catch generic BQ exceptions  # pylint: disable=broad-exception-caught

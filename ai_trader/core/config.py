@@ -1,8 +1,10 @@
 """Configuration management using Pydantic for validation."""
+
 from pathlib import Path
 from typing import Literal, Optional
-from pydantic import BaseModel, Field, field_validator
+
 import yaml
+from pydantic import BaseModel, Field, field_validator
 
 
 class DataConfig(BaseModel):
@@ -72,7 +74,7 @@ class Config(BaseModel):
         if not path.exists():
             raise FileNotFoundError(f"Config file not found: {path}")
 
-        with open(path, "r") as f:
+        with open(path) as f:
             data = yaml.safe_load(f)
 
         return cls(**data)

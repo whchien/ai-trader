@@ -1,4 +1,5 @@
 """Centralized logging configuration for ai-trader."""
+
 import logging
 import sys
 from pathlib import Path
@@ -39,9 +40,7 @@ def setup_logger(
 
     # Default format
     if format_string is None:
-        format_string = (
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     formatter = logging.Formatter(format_string)
 

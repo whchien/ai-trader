@@ -20,15 +20,16 @@ import os
 
 import numpy as np
 import pandas as pd
-from data_science.utils.utils import get_env_var, USER_AGENT
 from google.adk.tools import ToolContext
 from google.adk.tools.bigquery.client import get_bigquery_client
 from google.cloud import bigquery
 from google.genai import Client
 from google.genai.types import HttpOptions
 
-from .chase_sql import chase_constants
+from data_science.utils.utils import USER_AGENT, get_env_var
+
 from ...utils.utils import USER_AGENT
+from .chase_sql import chase_constants
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ def _serialize_value_for_sql(value):
         # For STRUCT, BQ expects ('val1', 'val2', ...).
         # The values() order from the dataframe should match the column order.
         string_values = [_serialize_value_for_sql(v) for v in value.values()]
-        return f"({", ".join(string_values)})"
+        return f"({', '.join(string_values)})"
     return str(value)
 
 
@@ -113,24 +114,17 @@ def get_bigquery_schema_and_samples():
     dataset_ref = bigquery.DatasetReference(data_project, dataset_id)
     tables_context = {}
     for table in client.list_tables(dataset_ref):
-        table_info = client.get_table(
-            bigquery.TableReference(dataset_ref, table.table_id)
-        )
+        table_info = client.get_table(bigquery.TableReference(dataset_ref, table.table_id))
         table_schema = [
-            (schema_field.name, schema_field.field_type)
-            for schema_field in table_info.schema
+            (schema_field.name, schema_field.field_type) for schema_field in table_info.schema
         ]
         table_ref = dataset_ref.table(table.table_id)
         sample_values = []
         if False:
             sample_query = f"SELECT * FROM `{table_ref}` LIMIT 5"
-            sample_values = (
-                client.query(sample_query).to_dataframe().to_dict(orient="list")
-            )
+            sample_values = client.query(sample_query).to_dataframe().to_dict(orient="list")
             for key in sample_values:
-                sample_values[key] = [
-                    _serialize_value_for_sql(v) for v in sample_values[key]
-                ]
+                sample_values[key] = [_serialize_value_for_sql(v) for v in sample_values[key]]
         tables_context[str(table_ref)] = {
             "table_schema": table_schema,
             "example_values": sample_values,
@@ -209,9 +203,7 @@ best practices outlined above to generate the correct BigQuery SQL.
 
     schema = tool_context.state["database_settings"]["bigquery"]["schema"]
 
-    prompt = prompt_template.format(
-        MAX_NUM_ROWS=MAX_NUM_ROWS, SCHEMA=schema, QUESTION=question
-    )
+    prompt = prompt_template.format(MAX_NUM_ROWS=MAX_NUM_ROWS, SCHEMA=schema, QUESTION=question)
 
     response = llm_client.models.generate_content(
         model=os.getenv("BASELINE_NL2SQL_MODEL", ""),

@@ -30,24 +30,16 @@ class TurtleTradingStrategy(BaseStrategy):
         self.low = self.datas[0].low
 
         # Calculate the upper Donchian channel: the highest price of the past 20 days
-        self.donchian_high = bt.ind.Highest(
-            self.high(-1), period=self.p.long_period, subplot=True
-        )
+        self.donchian_high = bt.ind.Highest(self.high(-1), period=self.p.long_period, subplot=True)
 
         # Calculate the lower Donchian channel: the lowest price of the past 10 days
-        self.donchian_low = bt.ind.Lowest(
-            self.low(-1), period=self.p.short_period, subplot=True
-        )
+        self.donchian_low = bt.ind.Lowest(self.low(-1), period=self.p.short_period, subplot=True)
 
         # Generate upper Donchian channel entry breakout: close > DonchianH, value is 1.0; otherwise -1.0
-        self.cross_high = bt.ind.CrossOver(
-            self.close(0), self.donchian_high, subplot=False
-        )
+        self.cross_high = bt.ind.CrossOver(self.close(0), self.donchian_high, subplot=False)
 
         # Generate lower Donchian channel exit breakdown: close < DonchianL, value is 1.0; otherwise -1.0
-        self.cross_low = bt.ind.CrossOver(
-            self.close(0), self.donchian_low, subplot=False
-        )
+        self.cross_low = bt.ind.CrossOver(self.close(0), self.donchian_low, subplot=False)
 
         # True Range (TR): True Range is a measure of volatility that takes into account the price range of an
         # asset over a certain period. It considers the following three values: The current high minus the current
@@ -55,12 +47,8 @@ class TurtleTradingStrategy(BaseStrategy):
         # minus the previous close.
         self.TR = bt.ind.Max(
             (self.high(0) - self.low(0)),  # Current day's high minus current day's low
-            abs(
-                self.high(0) - self.close(-1)
-            ),  # abs(current day's high - previous day's close)
-            abs(
-                self.low(0) - self.close(-1)
-            ),  # abs(current day's low - previous day's close)
+            abs(self.high(0) - self.close(-1)),  # abs(current day's high - previous day's close)
+            abs(self.low(0) - self.close(-1)),  # abs(current day's low - previous day's close)
         )
 
         # self.ATR = bt.ind.MovingAverageSimple(self.TR, period=self.p.entry_breakout, subplot=False)
@@ -78,10 +66,7 @@ class TurtleTradingStrategy(BaseStrategy):
         if self.position.size > 0:
             # Add to long position:
             # price rises by 0.5 ATR from the buy price and the number of additions <= 3
-            if (
-                self.datas[0].close > self.last_price + 0.5 * self.ATR[0]
-                and self.buy_count <= 4
-            ):
+            if self.datas[0].close > self.last_price + 0.5 * self.ATR[0] and self.buy_count <= 4:
                 buy_unit = max((self.broker.getvalue() * 0.01) / self.ATR[0], 1)
                 self.order = self.buy(size=int(buy_unit))
                 self.last_price = self.position.price

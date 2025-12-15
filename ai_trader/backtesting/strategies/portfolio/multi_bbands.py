@@ -1,4 +1,5 @@
 import backtrader as bt
+
 from ai_trader.backtesting.strategies.base import BaseStrategy
 
 
@@ -36,14 +37,14 @@ class MultiBBandsRotationStrategy(BaseStrategy):
             if data in new_hold:
                 new_hold.remove(data)
 
-        K = 1
-        if len(new_hold) > K:
+        k = 1
+        if len(new_hold) > k:
             data_roc = {}
             for item in new_hold:
                 data_roc[item] = self.inds[item][0]
             # 排序
             new_hold = sorted(data_roc.items(), key=lambda x: x[1], reverse=True)
-            new_hold = new_hold[:K]
+            new_hold = new_hold[:k]
             new_hold = [item[0] for item in new_hold]
 
         if len(new_hold) > 0:

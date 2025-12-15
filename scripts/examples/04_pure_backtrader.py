@@ -5,9 +5,9 @@ Pure Backtrader example without utilities.
 This example shows how to use Backtrader directly without any helper functions,
 demonstrating the full flexibility of the framework.
 """
+
 import backtrader as bt
 
-from ai_trader.backtesting.strategies.classic.rsi import RSIStrategy
 from ai_trader.data.fetchers.base import load_example
 
 

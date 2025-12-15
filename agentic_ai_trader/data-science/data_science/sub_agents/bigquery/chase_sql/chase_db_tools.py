@@ -97,23 +97,15 @@ def initial_bq_nl2sql(
     bq_schema = bq_settings["schema"]
     project = bq_settings["data_project_id"]
     db = bq_settings["dataset_id"]
-    transpile_to_bigquery = tool_context.state["database_settings"][
-        "transpile_to_bigquery"
-    ]
-    process_input_errors = tool_context.state["database_settings"][
-        "process_input_errors"
-    ]
+    transpile_to_bigquery = tool_context.state["database_settings"]["transpile_to_bigquery"]
+    process_input_errors = tool_context.state["database_settings"]["process_input_errors"]
     process_tool_output_errors = tool_context.state["database_settings"][
         "process_tool_output_errors"
     ]
-    number_of_candidates = tool_context.state["database_settings"][
-        "number_of_candidates"
-    ]
+    number_of_candidates = tool_context.state["database_settings"]["number_of_candidates"]
     model = tool_context.state["database_settings"]["model"]
     temperature = tool_context.state["database_settings"]["temperature"]
-    generate_sql_type = tool_context.state["database_settings"][
-        "generate_sql_type"
-    ]
+    generate_sql_type = tool_context.state["database_settings"]["generate_sql_type"]
 
     if generate_sql_type == GenerateSQLType.DC.value:
         prompt = DC_PROMPT_TEMPLATE.format(

@@ -83,9 +83,7 @@ def extract_json_from_model_output(model_output):
       or None if JSON extraction fails.
     """
     try:
-        cleaned_output = (
-            model_output.replace("```json", "").replace("```", "").strip()
-        )
+        cleaned_output = model_output.replace("```json", "").replace("```", "").strip()
         json_object = json.loads(cleaned_output)
         return json_object
     except json.JSONDecodeError as e:

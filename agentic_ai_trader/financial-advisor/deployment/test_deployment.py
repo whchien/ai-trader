@@ -37,7 +37,6 @@ flags.mark_flag_as_required("user_id")
 
 
 def main(argv: list[str]) -> None:  # pylint: disable=unused-argument
-
     load_dotenv()
 
     project_id = (

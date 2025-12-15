@@ -3,21 +3,22 @@ Cryptocurrency data fetcher with retry logic and crypto-specific validation.
 """
 
 import time
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import yfinance as yf
 from yfinance.exceptions import YFException
 
-from ai_trader.core.logging import get_logger
 from ai_trader.core.exceptions import DataFetchError, DataValidationError
+from ai_trader.core.logging import get_logger
 
 logger = get_logger(__name__)
 
 
 class CryptoDataError(DataValidationError):
     """Cryptocurrency-specific data validation error."""
+
     pass
 
 
@@ -70,7 +71,7 @@ class CryptoDataFetcher:
         end_date: Optional[str] = None,
         max_retries: int = 3,
         retry_delay: int = 2,
-        timeout: int = 30
+        timeout: int = 30,
     ):
         """
         Initialize CryptoDataFetcher.
@@ -124,8 +125,8 @@ class CryptoDataFetcher:
                     start=self.start_date,
                     end=self.end_date,
                     auto_adjust=False,  # Keep both Close and Adj Close
-                    actions=False,      # Don't include dividends and splits
-                    timeout=self.timeout
+                    actions=False,  # Don't include dividends and splits
+                    timeout=self.timeout,
                 )
 
                 # Validate the data
@@ -135,18 +136,16 @@ class CryptoDataFetcher:
                         raise DataFetchError(
                             f"No data available for {self.ticker}",
                             symbol=self.ticker,
-                            source="yfinance"
+                            source="yfinance",
                         )
                     continue
 
                 # Check if we got the expected columns
-                expected_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+                expected_columns = ["Open", "High", "Low", "Close", "Volume"]
                 missing_columns = [col for col in expected_columns if col not in df.columns]
 
                 if missing_columns:
-                    logger.warning(
-                        f"Missing columns for {self.ticker}: {missing_columns}"
-                    )
+                    logger.warning(f"Missing columns for {self.ticker}: {missing_columns}")
 
                 # Log success
                 logger.info(
@@ -158,7 +157,7 @@ class CryptoDataFetcher:
                 df.columns = df.columns.str.lower()
 
                 # Ensure the index is named 'date' (lowercase)
-                df.index.name = 'date'
+                df.index.name = "date"
 
                 return df
 
@@ -171,7 +170,7 @@ class CryptoDataFetcher:
                     raise DataFetchError(
                         f"Failed to fetch {self.ticker} after {self.max_retries} attempts: {e}",
                         symbol=self.ticker,
-                        source="yfinance"
+                        source="yfinance",
                     ) from e
 
             except Exception as e:
@@ -183,7 +182,7 @@ class CryptoDataFetcher:
                     raise DataFetchError(
                         f"Unexpected error fetching {self.ticker}: {e}",
                         symbol=self.ticker,
-                        source="yfinance"
+                        source="yfinance",
                     ) from e
 
             # Wait before retrying (exponential backoff)
@@ -237,7 +236,7 @@ class CryptoDataFetcher:
                     progress=False,
                     auto_adjust=False,
                     actions=False,
-                    group_by='ticker'  # Group by ticker for easier splitting
+                    group_by="ticker",  # Group by ticker for easier splitting
                 )
 
                 if df.empty:
@@ -254,10 +253,10 @@ class CryptoDataFetcher:
                     try:
                         # Normalize columns to lowercase
                         df.columns = df.columns.str.lower()
-                        df.index.name = 'date'
+                        df.index.name = "date"
 
                         # Check for all-NaN data (invalid ticker)
-                        if df[['open', 'high', 'low', 'close']].isna().all().all():
+                        if df[["open", "high", "low", "close"]].isna().all().all():
                             logger.warning(f"Ticker {ticker} has no valid data (all NaN)")
                             failed_tickers.append(ticker)
                         else:
@@ -279,10 +278,10 @@ class CryptoDataFetcher:
 
                                 # Normalize columns to lowercase
                                 ticker_df.columns = ticker_df.columns.str.lower()
-                                ticker_df.index.name = 'date'
+                                ticker_df.index.name = "date"
 
                                 # Check for all-NaN data (invalid ticker)
-                                if ticker_df[['open', 'high', 'low', 'close']].isna().all().all():
+                                if ticker_df[["open", "high", "low", "close"]].isna().all().all():
                                     logger.warning(f"Ticker {ticker} has no valid data (all NaN)")
                                     failed_tickers.append(ticker)
                                     continue
@@ -342,7 +341,7 @@ class CryptoDataFetcher:
         price_min: float = 0.01,
         price_max: float = 1000000.0,
         min_volume: float = 100.0,
-        max_gap_days: int = 2
+        max_gap_days: int = 2,
     ) -> bool:
         """
         Validate cryptocurrency data for crypto-specific characteristics.
@@ -377,80 +376,65 @@ class CryptoDataFetcher:
         """
         if df.empty:
             logger.error("Cannot validate empty DataFrame")
-            raise CryptoDataError(
-                "Empty DataFrame provided for validation",
-                symbol=self.ticker
-            )
+            raise CryptoDataError("Empty DataFrame provided for validation", symbol=self.ticker)
 
         validation_issues = []
 
         # 1. Check for required columns (lowercase)
-        required_columns = ['open', 'high', 'low', 'close', 'volume']
+        required_columns = ["open", "high", "low", "close", "volume"]
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
             validation_issues.append(f"Missing required columns: {missing_columns}")
 
         # 2. Check price positivity
-        price_columns = ['open', 'high', 'low', 'close']
+        price_columns = ["open", "high", "low", "close"]
         for col in price_columns:
             if col in df.columns:
                 negative_prices = (df[col] <= 0).sum()
                 if negative_prices > 0:
-                    validation_issues.append(
-                        f"{col} has {negative_prices} non-positive values"
-                    )
+                    validation_issues.append(f"{col} has {negative_prices} non-positive values")
 
         # 3. Check price range bounds
-        if 'high' in df.columns:
-            max_price = df['high'].max()
+        if "high" in df.columns:
+            max_price = df["high"].max()
             if max_price > price_max:
                 validation_issues.append(
                     f"Maximum price {max_price:.2f} exceeds reasonable bound {price_max:.2f}"
                 )
 
-        if 'low' in df.columns:
-            min_price = df['low'].min()
+        if "low" in df.columns:
+            min_price = df["low"].min()
             if min_price < price_min:
                 validation_issues.append(
                     f"Minimum price {min_price:.2f} below reasonable bound {price_min:.2f}"
                 )
 
         # 4. Check for zero-volume days
-        if 'volume' in df.columns:
-            zero_volume_days = (df['volume'] == 0).sum()
+        if "volume" in df.columns:
+            zero_volume_days = (df["volume"] == 0).sum()
             if zero_volume_days > 0:
-                validation_issues.append(
-                    f"Found {zero_volume_days} days with zero volume"
-                )
+                validation_issues.append(f"Found {zero_volume_days} days with zero volume")
 
         # 5. Check OHLC consistency
-        if all(col in df.columns for col in ['open', 'high', 'low', 'close']):
+        if all(col in df.columns for col in ["open", "high", "low", "close"]):
             # High should be >= Open, Close, Low
             high_violations = (
-                (df['high'] < df['open']) |
-                (df['high'] < df['close']) |
-                (df['high'] < df['low'])
+                (df["high"] < df["open"]) | (df["high"] < df["close"]) | (df["high"] < df["low"])
             ).sum()
 
             # Low should be <= Open, Close, High
             low_violations = (
-                (df['low'] > df['open']) |
-                (df['low'] > df['close']) |
-                (df['low'] > df['high'])
+                (df["low"] > df["open"]) | (df["low"] > df["close"]) | (df["low"] > df["high"])
             ).sum()
 
             if high_violations > 0:
-                validation_issues.append(
-                    f"Found {high_violations} High price violations"
-                )
+                validation_issues.append(f"Found {high_violations} High price violations")
             if low_violations > 0:
-                validation_issues.append(
-                    f"Found {low_violations} Low price violations"
-                )
+                validation_issues.append(f"Found {low_violations} Low price violations")
 
         # 6. Check daily price changes
-        if 'close' in df.columns:
-            daily_returns = df['close'].pct_change() * 100
+        if "close" in df.columns:
+            daily_returns = df["close"].pct_change() * 100
             extreme_moves = daily_returns[abs(daily_returns) > max_daily_change_pct]
 
             if len(extreme_moves) > 0:
@@ -458,9 +442,7 @@ class CryptoDataFetcher:
                     f"Found {len(extreme_moves)} days with price changes "
                     f"exceeding {max_daily_change_pct}%"
                 )
-                logger.warning(
-                    f"Extreme price movements detected:\n{extreme_moves.describe()}"
-                )
+                logger.warning(f"Extreme price movements detected:\n{extreme_moves.describe()}")
 
         # 7. Check for gaps in data
         date_diff = df.index.to_series().diff()
@@ -501,12 +483,12 @@ class CryptoDataFetcher:
             >>> print(f"Ann. Volatility: {metrics['annualized_volatility']:.2f}%")
             >>> print(f"Max Drawdown: {metrics['max_drawdown']:.2f}%")
         """
-        if df.empty or 'close' not in df.columns:
+        if df.empty or "close" not in df.columns:
             logger.warning("Cannot calculate volatility metrics: insufficient data")
             return {}
 
         # Calculate daily returns
-        daily_returns = df['close'].pct_change().dropna()
+        daily_returns = df["close"].pct_change().dropna()
 
         # Daily volatility
         daily_vol = daily_returns.std() * 100  # as percentage
@@ -524,10 +506,10 @@ class CryptoDataFetcher:
         max_drawdown = drawdown.min() * 100  # as percentage
 
         metrics = {
-            'daily_volatility': round(daily_vol, 2),
-            'annualized_volatility': round(annualized_vol, 2),
-            'max_drawdown': round(max_drawdown, 2),
-            'avg_daily_return': round(avg_daily_return, 4)
+            "daily_volatility": round(daily_vol, 2),
+            "annualized_volatility": round(annualized_vol, 2),
+            "max_drawdown": round(max_drawdown, 2),
+            "avg_daily_return": round(avg_daily_return, 4),
         }
 
         logger.debug(f"Volatility metrics: {metrics}")
@@ -560,45 +542,40 @@ class CryptoDataFetcher:
             ...       f"${summary['price_range']['highest']:.0f}")
         """
         if df.empty:
-            return {
-                "ticker": self.ticker,
-                "rows": 0,
-                "date_range": None,
-                "columns": []
-            }
+            return {"ticker": self.ticker, "rows": 0, "date_range": None, "columns": []}
 
         summary = {
             "ticker": self.ticker,
             "rows": len(df),
             "date_range": {
                 "start": df.index.min().strftime("%Y-%m-%d"),
-                "end": df.index.max().strftime("%Y-%m-%d")
+                "end": df.index.max().strftime("%Y-%m-%d"),
             },
             "columns": list(df.columns),
             "missing_values": df.isnull().sum().to_dict(),
         }
 
         # Price statistics
-        if all(col in df.columns for col in ['high', 'low', 'close']):
+        if all(col in df.columns for col in ["high", "low", "close"]):
             summary["price_range"] = {
-                "highest": float(df['high'].max()),
-                "lowest": float(df['low'].min()),
-                "latest_close": float(df['close'].iloc[-1]),
-                "first_close": float(df['close'].iloc[0])
+                "highest": float(df["high"].max()),
+                "lowest": float(df["low"].min()),
+                "latest_close": float(df["close"].iloc[-1]),
+                "first_close": float(df["close"].iloc[0]),
             }
 
             # Calculate total return
             total_return = (
-                (df['close'].iloc[-1] - df['close'].iloc[0]) / df['close'].iloc[0]
+                (df["close"].iloc[-1] - df["close"].iloc[0]) / df["close"].iloc[0]
             ) * 100
             summary["total_return_pct"] = round(total_return, 2)
 
         # Volume statistics
-        if 'volume' in df.columns:
+        if "volume" in df.columns:
             summary["volume"] = {
-                "mean": float(df['volume'].mean()),
-                "median": float(df['volume'].median()),
-                "max": float(df['volume'].max())
+                "mean": float(df["volume"].mean()),
+                "median": float(df["volume"].median()),
+                "max": float(df["volume"].max()),
             }
 
         # Volatility metrics
@@ -609,19 +586,20 @@ class CryptoDataFetcher:
         return summary
 
 
-
 if __name__ == "__main__":
     # Example usage
     fetcher = CryptoDataFetcher(ticker="BTC-USD", start_date="2024-01-01", end_date="2024-12-31")
     df = fetcher.fetch()
 
     print(f"\nFetched {len(df)} rows of Bitcoin data")
-    print(f"\nData Summary:")
+    print("\nData Summary:")
     summary = fetcher.get_data_summary(df)
     print(f"Date Range: {summary['date_range']['start']} to {summary['date_range']['end']}")
-    print(f"Price Range: ${summary['price_range']['lowest']:.2f} - ${summary['price_range']['highest']:.2f}")
+    print(
+        f"Price Range: ${summary['price_range']['lowest']:.2f} - ${summary['price_range']['highest']:.2f}"
+    )
     print(f"Total Return: {summary['total_return_pct']:.2f}%")
-    print(f"\nVolatility Metrics:")
+    print("\nVolatility Metrics:")
     print(f"  Daily Volatility: {summary['volatility']['daily_volatility']:.2f}%")
     print(f"  Annualized Volatility: {summary['volatility']['annualized_volatility']:.2f}%")
     print(f"  Max Drawdown: {summary['volatility']['max_drawdown']:.2f}%")

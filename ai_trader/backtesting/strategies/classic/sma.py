@@ -8,9 +8,7 @@ class NaiveSMAStrategy(BaseStrategy):
 
     def __init__(self):
         super().__init__()
-        self.sma = bt.indicators.MovingAverageSimple(
-            self.data.close, period=self.params.period
-        )
+        self.sma = bt.indicators.MovingAverageSimple(self.data.close, period=self.params.period)
         self.signal_buy = self.data.close > self.sma
         self.signal_close = self.data.close < self.sma
 

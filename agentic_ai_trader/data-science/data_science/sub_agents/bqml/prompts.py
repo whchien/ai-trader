@@ -22,7 +22,6 @@ from data_science.utils.utils import get_env_var
 
 
 def return_instructions_bqml() -> str:
-
     instruction_prompt_bqml_v3 = f"""
     <CONTEXT>
         <TASK>

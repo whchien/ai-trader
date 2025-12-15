@@ -57,12 +57,12 @@ class RSRS(bt.Indicator):
         low_n = self.low.get(ago=0, size=self.period)
 
         try:
-            X = sm.add_constant(np.array(low_n))
-            model = sm.OLS(np.array(high_n), X)
+            x = sm.add_constant(np.array(low_n))
+            model = sm.OLS(np.array(high_n), x)
             results = model.fit()
             self.lines.rsrs[0] = results.params[1]
             self.lines.R2[0] = results.rsquared
-        except:
+        except Exception:
             self.lines.rsrs[0] = 0
 
 
@@ -131,13 +131,9 @@ class AverageVolatility(bt.Indicator):
     def __init__(self, period: int):
         self.addminperiod(period)
 
-        self.ma_close = bt.indicators.MovingAverageSimple(
-            self.data.close, period=period
-        )
+        self.ma_close = bt.indicators.MovingAverageSimple(self.data.close, period=period)
         self.volatility = DailyCandleVolatility(self.data)
-        self.ma_volatility = bt.indicators.MovingAverageSimple(
-            self.volatility, period=period
-        )
+        self.ma_volatility = bt.indicators.MovingAverageSimple(self.volatility, period=period)
         self.lines.avg_volatility = self.ma_volatility / self.ma_close * 100
 
     def next(self):
@@ -206,32 +202,20 @@ class DoubleTop(bt.Indicator):
     ):
         self.addminperiod(sma_long)
         self.past_highest = bt.indicators.Highest(self.data.close, period=past_highest)
-        self.sma_short = bt.indicators.MovingAverageSimple(
-            self.data.close, period=sma_short
-        )
-        self.sma_long = bt.indicators.MovingAverageSimple(
-            self.data.close, period=sma_long
-        )
-        self.vol_short = bt.indicators.MovingAverageSimple(
-            self.data.volume, period=vol_short
-        )
-        self.vol_long = bt.indicators.MovingAverageSimple(
-            self.data.volume, period=vol_long
-        )
+        self.sma_short = bt.indicators.MovingAverageSimple(self.data.close, period=sma_short)
+        self.sma_long = bt.indicators.MovingAverageSimple(self.data.close, period=sma_long)
+        self.vol_short = bt.indicators.MovingAverageSimple(self.data.volume, period=vol_short)
+        self.vol_long = bt.indicators.MovingAverageSimple(self.data.volume, period=vol_long)
 
     def next(self):
         # Condition 1: Close price makes a new 60-day high
         cond_1 = self.data.close[0] == self.past_highest
 
         # Condition 2: At least one day in the previous 30 days did not make a new high
-        cond_2 = any(
-            [p for p in self.data.close.get(ago=1, size=30) if p < self.past_highest]
-        )
+        cond_2 = any([p for p in self.data.close.get(ago=1, size=30) if p < self.past_highest])
 
         # Condition 3: At least one day in the 30th to 55th day before today made a new 60-day high
-        cond_3 = any(
-            [p for p in self.data.close.get(ago=30, size=25) if p > self.past_highest]
-        )
+        cond_3 = any([p for p in self.data.close.get(ago=30, size=25) if p > self.past_highest])
 
         # Condition 4: Maximum close price in the 30th to 55th day before today is less than today's close
         try:
@@ -249,7 +233,7 @@ class DoubleTop(bt.Indicator):
         cond_7 = self.vol_short[0] > self.vol_long[0]
 
         self.lines.signal[0] = (
-            1 if cond_1 & cond_2 & cond_3 & cond_5 & cond_6 & cond_7 else -1
+            1 if cond_1 & cond_2 & cond_3 & cond_4 & cond_5 & cond_6 & cond_7 else -1
         )
 
 
@@ -279,38 +263,24 @@ class VCPPattern(bt.Indicator):
         mean_vol: int = 20,
     ):
         # Volume reduction condition
-        volume_short_avg = bt.indicators.MovingAverageSimple(
-            self.data.volume, period=period_short
-        )
-        volume_long_avg = bt.indicators.MovingAverageSimple(
-            self.data.volume, period=period_long
-        )
+        volume_short_avg = bt.indicators.MovingAverageSimple(self.data.volume, period=period_short)
+        volume_long_avg = bt.indicators.MovingAverageSimple(self.data.volume, period=period_long)
         self.volume_reduce = volume_short_avg < (volume_long_avg * period_long_discount)
 
         # Price contraction condition
-        price_short_std = bt.indicators.StandardDeviation(
-            self.data.close, period=period_short
-        )
-        price_long_std = bt.indicators.StandardDeviation(
-            self.data.close, period=period_long
-        )
+        price_short_std = bt.indicators.StandardDeviation(self.data.close, period=period_short)
+        price_long_std = bt.indicators.StandardDeviation(self.data.close, period=period_long)
         self.price_contract = price_short_std < (price_long_std * period_long_discount)
 
-        self.highest_close = bt.indicators.Highest(
-            self.data.close, period=highest_close
-        )
-        self.mean_vol = bt.indicators.MovingAverageSimple(
-            self.data.volume, period=mean_vol
-        )
+        self.highest_close = bt.indicators.Highest(self.data.close, period=highest_close)
+        self.mean_vol = bt.indicators.MovingAverageSimple(self.data.volume, period=mean_vol)
 
     def next(self):
         # Condition 1: Volume contraction and price contraction over the last 5 days
         # VCP = Volume Contraction Pattern, checks if both volume and price are contracting
         volume_reduce_5d = [i for i in self.volume_reduce.get(size=5)]
         price_contract_5d = [i for i in self.price_contract.get(size=5)]
-        cond_1 = any(
-            v > 0.0 and p > 0.0 for v, p in zip(volume_reduce_5d, price_contract_5d)
-        )
+        cond_1 = any(v > 0.0 and p > 0.0 for v, p in zip(volume_reduce_5d, price_contract_5d))
 
         # Condition 2: The current closing price must be the highest in the past 100 days
         # This indicates the classic is reaching a new high

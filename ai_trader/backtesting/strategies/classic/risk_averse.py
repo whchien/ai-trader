@@ -1,11 +1,7 @@
 import backtrader as bt
 
 from ai_trader.backtesting.strategies.base import BaseStrategy
-from ai_trader.backtesting.strategies.indicators import (
-    AverageVolatility,
-    RecentHigh,
-    DiffHighLow,
-)
+from ai_trader.backtesting.strategies.indicators import AverageVolatility, DiffHighLow, RecentHigh
 
 
 class RiskAverseStrategy(BaseStrategy):
@@ -25,9 +21,7 @@ class RiskAverseStrategy(BaseStrategy):
     )
 
     def __init__(self):
-        self.candle_volatility = AverageVolatility(
-            self.data, period=self.params.volatility_period
-        )
+        self.candle_volatility = AverageVolatility(self.data, period=self.params.volatility_period)
         self.has_new_high = RecentHigh(self.data)
         self.past_vol = bt.indicators.SimpleMovingAverage(
             self.data.volume, period=self.params.vol_period
@@ -36,9 +30,7 @@ class RiskAverseStrategy(BaseStrategy):
 
     def next(self):
         # Conditions
-        cond_1 = (
-            self.candle_volatility.avg_volatility[0] < self.params.volatility_threshold
-        )
+        cond_1 = self.candle_volatility.avg_volatility[0] < self.params.volatility_threshold
         cond_2 = self.has_new_high.new_high[0] > 0
         cond_3 = self.past_vol[0] > 100 * 1000
         cond_4 = self.diff_high_low.diff[0] < self.params.high_low_threshold

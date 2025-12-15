@@ -1,5 +1,3 @@
-import backtrader as bt
-
 from ai_trader.backtesting.strategies.base import BaseStrategy
 from ai_trader.backtesting.strategies.indicators import DoubleTop
 

@@ -5,6 +5,7 @@ Portfolio backtest example.
 This example shows how to backtest a portfolio rotation strategy
 across multiple stocks.
 """
+
 from pathlib import Path
 
 from ai_trader.backtesting.strategies.portfolio.roc_rotation import ROCRotationStrategy

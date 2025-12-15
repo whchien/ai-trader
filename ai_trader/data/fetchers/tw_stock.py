@@ -1,5 +1,5 @@
-from typing import Optional
 import warnings
+from typing import Optional
 
 import pandas as pd
 from twstock import Stock
@@ -9,7 +9,7 @@ from ai_trader.data.fetchers import BaseFetcher
 from ai_trader.data.fetchers.base import logger
 
 # Disable SSL warnings when we bypass verification
-warnings.filterwarnings('ignore', message='Unverified HTTPS request')
+warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
 
 class TWStockFetcher(BaseFetcher):
@@ -36,12 +36,7 @@ class TWStockFetcher(BaseFetcher):
         >>> print(df.head())
     """
 
-    def __init__(
-        self,
-        symbol: str,
-        start_date: str,
-        end_date: Optional[str] = None
-    ):
+    def __init__(self, symbol: str, start_date: str, end_date: Optional[str] = None):
         """
         Initialize Taiwan stock data fetcher.
 
@@ -60,13 +55,12 @@ class TWStockFetcher(BaseFetcher):
         # Parse start_date to get year and month for twstock
         try:
             from datetime import datetime
+
             dt = datetime.strptime(start_date, "%Y-%m-%d")
             self.start_year = dt.year
             self.start_month = dt.month
         except ValueError as e:
-            raise ValueError(
-                f"Invalid start_date format: {start_date}. Expected YYYY-MM-DD"
-            ) from e
+            raise ValueError(f"Invalid start_date format: {start_date}. Expected YYYY-MM-DD") from e
 
         logger.info(
             f"Initialized TWStockFetcher: symbol={symbol}, "
@@ -92,10 +86,11 @@ class TWStockFetcher(BaseFetcher):
             # This is necessary because Python 3.13+ has stricter SSL requirements
             # and TWSE certificates are missing Subject Key Identifier
             import requests
+
             original_get = requests.get
 
             def patched_get(*args, **kwargs):
-                kwargs['verify'] = False
+                kwargs["verify"] = False
                 return original_get(*args, **kwargs)
 
             requests.get = patched_get
@@ -110,9 +105,7 @@ class TWStockFetcher(BaseFetcher):
 
             if not stock.data:
                 raise DataFetchError(
-                    f"No data returned for {self.symbol}",
-                    symbol=self.symbol,
-                    source="twstock"
+                    f"No data returned for {self.symbol}", symbol=self.symbol, source="twstock"
                 )
 
             # Convert to DataFrame
@@ -125,8 +118,8 @@ class TWStockFetcher(BaseFetcher):
             df = df.rename(columns={"capacity": "volume"})
 
             # Set date as index
-            df['date'] = pd.to_datetime(df['date'])
-            df = df.set_index('date')
+            df["date"] = pd.to_datetime(df["date"])
+            df = df.set_index("date")
 
             # Filter by end_date if provided
             if self.end_date:
@@ -145,17 +138,13 @@ class TWStockFetcher(BaseFetcher):
 
         except (ConnectionError, TimeoutError) as e:
             raise DataFetchError(
-                f"Network error fetching {self.symbol}: {e}",
-                symbol=self.symbol,
-                source="twstock"
+                f"Network error fetching {self.symbol}: {e}", symbol=self.symbol, source="twstock"
             ) from e
         except Exception as e:
             if isinstance(e, (DataFetchError, DataValidationError)):
                 raise
             raise DataFetchError(
-                f"Failed to fetch {self.symbol}: {e}",
-                symbol=self.symbol,
-                source="twstock"
+                f"Failed to fetch {self.symbol}: {e}", symbol=self.symbol, source="twstock"
             ) from e
 
     def fetch_batch(self, symbols: list[str]) -> tuple[dict[str, pd.DataFrame], list[str]]:
@@ -190,10 +179,11 @@ class TWStockFetcher(BaseFetcher):
 
         # Monkey-patch requests once for all downloads
         import requests
+
         original_get = requests.get
 
         def patched_get(*args, **kwargs):
-            kwargs['verify'] = False
+            kwargs["verify"] = False
             return original_get(*args, **kwargs)
 
         requests.get = patched_get
@@ -221,8 +211,8 @@ class TWStockFetcher(BaseFetcher):
                     df = df.rename(columns={"capacity": "volume"})
 
                     # Set date as index
-                    df['date'] = pd.to_datetime(df['date'])
-                    df = df.set_index('date')
+                    df["date"] = pd.to_datetime(df["date"])
+                    df = df.set_index("date")
 
                     # Filter by end_date if provided
                     if self.end_date:
@@ -251,8 +241,7 @@ class TWStockFetcher(BaseFetcher):
             logger.debug("Restored original requests.get")
 
         logger.info(
-            f"Batch fetch complete: {len(successful_data)} succeeded, "
-            f"{len(failed_symbols)} failed"
+            f"Batch fetch complete: {len(successful_data)} succeeded, {len(failed_symbols)} failed"
         )
 
         return successful_data, failed_symbols

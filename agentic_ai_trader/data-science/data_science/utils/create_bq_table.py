@@ -27,10 +27,7 @@ print(env_file_path)
 load_dotenv(dotenv_path=env_file_path)
 
 
-def load_csv_to_bigquery(data_project_id,
-                         dataset_name,
-                         table_name,
-                         csv_filepath):
+def load_csv_to_bigquery(data_project_id, dataset_name, table_name, csv_filepath):
     """Loads a CSV file into a BigQuery table.
 
     Args:
@@ -52,19 +49,14 @@ def load_csv_to_bigquery(data_project_id,
     )
 
     with open(csv_filepath, "rb") as source_file:
-        job = client.load_table_from_file(
-            source_file, table_ref, job_config=job_config
-        )
+        job = client.load_table_from_file(source_file, table_ref, job_config=job_config)
 
     job.result()  # Wait for the job to complete
 
-    print(f"Loaded {job.output_rows} rows into "
-          f"{dataset_name}.{table_name}")
+    print(f"Loaded {job.output_rows} rows into {dataset_name}.{table_name}")
 
 
-def create_dataset_if_not_exists(compute_project_id,
-                                 data_project_id,
-                                 dataset_name):
+def create_dataset_if_not_exists(compute_project_id, data_project_id, dataset_name):
     """Creates a BigQuery dataset if it does not already exist.
 
     Args:
@@ -86,7 +78,6 @@ def create_dataset_if_not_exists(compute_project_id,
 
 
 def main():
-
     current_directory = os.getcwd()
     print(f"Current working directory: {current_directory}")
 
@@ -104,23 +95,15 @@ def main():
 
     # Create the dataset if it doesn't exist
     print("Creating dataset.")
-    create_dataset_if_not_exists(compute_project_id,
-                                 data_project_id,
-                                 dataset_name)
+    create_dataset_if_not_exists(compute_project_id, data_project_id, dataset_name)
 
     # Load the train data
     print("Loading train table.")
-    load_csv_to_bigquery(data_project_id,
-                         dataset_name,
-                         "train",
-                         train_csv_filepath)
+    load_csv_to_bigquery(data_project_id, dataset_name, "train", train_csv_filepath)
 
     # Load the test data
     print("Loading test table.")
-    load_csv_to_bigquery(data_project_id,
-                         dataset_name,
-                         "test",
-                         test_csv_filepath)
+    load_csv_to_bigquery(data_project_id, dataset_name, "test", test_csv_filepath)
 
 
 if __name__ == "__main__":

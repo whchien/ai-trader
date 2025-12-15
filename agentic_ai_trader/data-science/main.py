@@ -31,7 +31,6 @@ from fastapi import FastAPI
 from google.adk.cli.fast_api import get_fast_api_app
 from google.cloud import logging as google_cloud_logging
 
-
 # Load environment variables from .env file
 load_dotenv()
 
@@ -45,7 +44,7 @@ session_uri = os.getenv("SESSION_SERVICE_URI", None)
 
 # Get Enable Web interface serving flag from environment variables
 # Set web=True if you intend to serve a web interface, False otherwise
-web_interface_enabled = os.getenv("SERVE_WEB_INTERFACE", 'False').lower() in ('true', '1')
+web_interface_enabled = os.getenv("SERVE_WEB_INTERFACE", "False").lower() in ("true", "1")
 
 # Prepare arguments for get_fast_api_app
 app_args = {"agents_dir": AGENT_DIR, "web": web_interface_enabled}

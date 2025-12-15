@@ -8,8 +8,7 @@ class ROCRotationStrategy(BaseStrategy):
 
     def __init__(self):
         self.indicators = {
-            data: bt.ind.RateOfChange(data, period=self.params.period)
-            for data in self.datas
+            data: bt.ind.RateOfChange(data, period=self.params.period) for data in self.datas
         }
 
         self.top_k = 5
