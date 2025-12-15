@@ -5345,4 +5345,4 @@ notebook = ["ipykernel", "jupyter", "nbval"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "0d12cfd075217010bb935ccb92fbb4368d1feffa1a23f27bbc86d86f5197efcd"
+content-hash = "bcedebd9a3fc2e325671993d6f4e98208c29a8e7a11f0b7f375225f730766b5b"
