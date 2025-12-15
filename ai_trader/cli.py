@@ -65,7 +65,7 @@ def run(
     data_config = config.get("data", {})
     sizer_config = config.get("sizer", {"type": "percent", "params": {"percents": 95}})
     analyzer_list = config.get("analyzers", ["sharpe", "drawdown", "returns"])
-    plot_enabled = config.get("plot", True)
+    plot_enabled = config.get("plot", False)
     plot_params = config.get("plot_params", {})
 
     # Check if single stock or portfolio

@@ -28,10 +28,10 @@ class BaseStrategy(bt.Strategy):
 
     def log(self, txt, dt=None):
         """
-        Log the provided text with a timestamp.
+        Log the provided text with the backtest date.
         """
         dt = dt or self.datas[0].datetime.date(0)
-        print(f"{dt.isoformat()} │ {txt}")
+        logger.info(f"{dt.isoformat()} │ {txt}")
 
     def notify_order(self, order):
         """
