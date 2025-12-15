@@ -139,7 +139,7 @@ class USStockFetcher(BaseFetcher):
         try:
             # Download all symbols in one API call (space-separated)
             symbols_str = " ".join(symbols)
-            logger.debug(f"Downloading: {symbols_str}")
+            logger.info(f"Downloading {len(symbols)} symbols from Yahoo Finance...")
 
             df = yf.download(
                 symbols_str,
@@ -170,8 +170,9 @@ class USStockFetcher(BaseFetcher):
                     failed_symbols.append(symbol)
             else:
                 # Multiple symbols: df has MultiIndex columns (symbol, column_name)
-                for symbol in symbols:
+                for idx, symbol in enumerate(symbols, 1):
                     try:
+                        logger.info(f"[{idx}/{len(symbols)}] Processing {symbol}...")
                         # Extract data for this symbol
                         if symbol in df.columns.get_level_values(0):
                             symbol_df = df[symbol].copy()

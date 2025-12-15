@@ -23,8 +23,10 @@ patsy==0.5.6
 peewee==3.17.5
 pillow==10.3.0
 platformdirs==4.2.0
+pydantic==2.9.2
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
+pyyaml==6.0.2
 pytz==2024.1
 requests==2.32.3
 ruff==0.4.8

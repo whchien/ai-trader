@@ -227,7 +227,10 @@ class CryptoDataFetcher:
             try:
                 # Download all tickers in one API call (space-separated)
                 tickers_str = " ".join(tickers)
-                logger.debug(f"Downloading: {tickers_str} (attempt {attempt}/{self.max_retries})")
+                logger.info(
+                    f"Downloading {len(tickers)} cryptocurrencies from Yahoo Finance "
+                    f"(attempt {attempt}/{self.max_retries})..."
+                )
 
                 df = yf.download(
                     tickers_str,
@@ -270,8 +273,9 @@ class CryptoDataFetcher:
                         failed_tickers.append(ticker)
                 else:
                     # Multiple tickers: df has MultiIndex columns (ticker, column_name)
-                    for ticker in tickers:
+                    for idx, ticker in enumerate(tickers, 1):
                         try:
+                            logger.info(f"[{idx}/{len(tickers)}] Processing {ticker}...")
                             # Extract data for this ticker
                             if ticker in df.columns.get_level_values(0):
                                 ticker_df = df[ticker].copy()

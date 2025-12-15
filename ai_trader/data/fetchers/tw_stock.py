@@ -189,9 +189,9 @@ class TWStockFetcher(BaseFetcher):
         requests.get = patched_get
 
         try:
-            for symbol in symbols:
+            for idx, symbol in enumerate(symbols, 1):
                 try:
-                    logger.debug(f"Fetching TW stock: {symbol}")
+                    logger.info(f"[{idx}/{len(symbols)}] Fetching TW stock: {symbol}")
 
                     # Fetch from twstock
                     stock = Stock(symbol)
