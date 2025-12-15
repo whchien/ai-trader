@@ -12,9 +12,9 @@ from ai_trader.utils.backtest import (
     add_analyzers,
     add_portfolio_data,
     add_sizer,
-    add_stock_data,
     create_cerebro,
     print_results,
+    run_backtest,
 )
 
 logger = get_logger(__name__)
@@ -57,25 +57,47 @@ def run(
     if commission is not None:
         config["broker"]["commission"] = commission
 
-    # Create cerebro
-    cerebro = create_cerebro(
-        cash=config["broker"]["cash"],
-        commission=config["broker"]["commission"],
-    )
+    # Load strategy class
+    strategy_config = config["strategy"]
+    strategy_class = _load_strategy_class(strategy_config["class"])
 
-    # Load data
+    # Get common parameters
     data_config = config.get("data", {})
+    sizer_config = config.get("sizer", {"type": "percent", "params": {"percents": 95}})
+    analyzer_list = config.get("analyzers", ["sharpe", "drawdown", "returns"])
+    plot_enabled = config.get("plot", True)
+    plot_params = config.get("plot_params", {})
+
+    # Check if single stock or portfolio
     if "file" in data_config:
-        # Single stock
-        add_stock_data(
-            cerebro,
-            source=data_config["file"],
+        # Single stock - use run_backtest()
+        click.echo(f"\nRunning backtest: {strategy_class.__name__}")
+        click.echo(f"Data: {data_config['file']}\n")
+
+        run_backtest(
+            strategy=strategy_class,
+            data_source=data_config["file"],
+            cash=config["broker"]["cash"],
+            commission=config["broker"]["commission"],
             start_date=data_config.get("start_date"),
             end_date=data_config.get("end_date"),
-            date_col=data_config.get("date_col", "date"),
+            sizer_type=sizer_config["type"],
+            sizer_params=sizer_config.get("params", {}),
+            analyzers=analyzer_list,
+            strategy_params=strategy_config.get("params", {}),
+            print_output=True,
+            plot=plot_enabled,
+            plot_params=plot_params,
         )
+
     elif "directory" in data_config:
-        # Portfolio
+        # Portfolio - manual approach with plotting support
+        cerebro = create_cerebro(
+            cash=config["broker"]["cash"],
+            commission=config["broker"]["commission"],
+        )
+
+        # Add portfolio data
         add_portfolio_data(
             cerebro,
             data_dir=data_config["directory"],
@@ -83,41 +105,41 @@ def run(
             end_date=data_config.get("end_date"),
             date_col=data_config.get("date_col", "date"),
         )
+
+        # Add strategy with parameters
+        strategy_params = strategy_config.get("params", {})
+        cerebro.addstrategy(strategy_class, **strategy_params)
+
+        # Add sizer
+        add_sizer(cerebro, sizer_config["type"], **sizer_config.get("params", {}))
+
+        # Add analyzers
+        add_analyzers(cerebro, analyzer_list)
+
+        # Get initial value
+        initial_value = cerebro.broker.getvalue()
+
+        # Run backtest
+        click.echo(f"\nRunning backtest: {strategy_class.__name__}")
+        click.echo(f"Data: {data_config['directory']}")
+        click.echo(f"Initial value: ${initial_value:,.2f}\n")
+
+        results = cerebro.run()
+
+        # Get final value
+        final_value = cerebro.broker.getvalue()
+
+        # Print results
+        print_results(results, initial_value, final_value)
+
+        # Plot results if enabled
+        if plot_enabled:
+            logger.info("Generating backtest plot")
+            cerebro.plot(**plot_params)
+
     else:
         click.echo("Error: Config must specify either 'data.file' or 'data.directory'", err=True)
         sys.exit(1)
-
-    # Load strategy class
-    strategy_config = config["strategy"]
-    strategy_class = _load_strategy_class(strategy_config["class"])
-
-    # Add strategy with parameters
-    strategy_params = strategy_config.get("params", {})
-    cerebro.addstrategy(strategy_class, **strategy_params)
-
-    # Add sizer
-    sizer_config = config.get("sizer", {"type": "percent", "params": {"percents": 95}})
-    add_sizer(cerebro, sizer_config["type"], **sizer_config.get("params", {}))
-
-    # Add analyzers
-    analyzer_list = config.get("analyzers", ["sharpe", "drawdown", "returns"])
-    add_analyzers(cerebro, analyzer_list)
-
-    # Get initial value
-    initial_value = cerebro.broker.getvalue()
-
-    # Run backtest
-    click.echo(f"\nRunning backtest: {strategy_class.__name__}")
-    click.echo(f"Data: {data_config.get('file') or data_config.get('directory')}")
-    click.echo(f"Initial value: ${initial_value:,.2f}\n")
-
-    results = cerebro.run()
-
-    # Get final value
-    final_value = cerebro.broker.getvalue()
-
-    # Print results
-    print_results(results, initial_value, final_value)
 
 
 @cli.command()

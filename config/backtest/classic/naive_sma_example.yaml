@@ -7,8 +7,8 @@ broker:
 data:
   file: "data/us_stock/tsm.csv"  # Path to single stock CSV file
   start_date: "2020-01-01"
-  end_date: "2023-12-31"
-  date_col: "Date"  # Column name for date (use "Date" for US stocks)
+  end_date: "2025-12-01"
+  date_col: "date"
 
 strategy:
   class: "NaiveSMAStrategy"  # Strategy class name
@@ -25,3 +25,8 @@ analyzers:
   - drawdown
   - returns
   - trades
+
+# Plotting (optional)
+plot: true  # Set to true to display backtest chart
+# plot_params:  # Optional parameters for cerebro.plot()
+#   iplot: false  # Set to true for interactive Jupyter plots

@@ -11,6 +11,7 @@ from typing import List, Optional, Type, Union
 import backtrader as bt
 import pandas as pd
 
+from ai_trader.backtesting.strategies.classic import NaiveSMAStrategy
 from ai_trader.core.logging import get_logger
 from ai_trader.core.utils import extract_ticker_from_path
 from ai_trader.data.fetchers.base import load_example
@@ -314,6 +315,8 @@ def run_backtest(
     analyzers: Optional[List[str]] = None,
     strategy_params: Optional[dict] = None,
     print_output: bool = True,
+    plot: bool = False,
+    plot_params: Optional[dict] = None,
 ) -> List[bt.Strategy]:
     """
     Run a complete backtest with sensible defaults.
@@ -332,6 +335,8 @@ def run_backtest(
         analyzers: List of analyzer names (None for defaults)
         strategy_params: Parameters to pass to strategy (e.g., {'period': 20})
         print_output: Whether to print results (default: True)
+        plot: Whether to plot results using cerebro.plot() (default: False)
+        plot_params: Optional parameters to pass to cerebro.plot() (e.g., {'iplot': False})
 
     Returns:
         List of strategy instances with results
@@ -342,7 +347,8 @@ def run_backtest(
         ...     SMAStrategy,
         ...     "data/AAPL.csv",
         ...     cash=100000,
-        ...     strategy_params={'fast_period': 10, 'slow_period': 30}
+        ...     strategy_params={'fast_period': 10, 'slow_period': 30},
+        ...     plot=True
         ... )
     """
     # Create cerebro
@@ -389,5 +395,12 @@ def run_backtest(
     # Print results
     if print_output:
         print_results(results, initial_value, final_value)
+
+    # Plot results
+    if plot:
+        if plot_params is None:
+            plot_params = {}
+        logger.info("Generating backtest plot")
+        cerebro.plot(**plot_params)
 
     return results
