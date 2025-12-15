@@ -14,9 +14,15 @@ data:
 strategy:
   class: "TripleRSIRotationStrategy"  # Strategy class name
   params:
+    rebal_month: [2, 4, 6, 8, 10, 12]  # Re-balancing months
+    rebal_monthday: [5]  # Re-balancing day of the month
+    num_volume: 5  # Number of top volume stocks to select
     rsi_short: 20  # Short RSI period
     rsi_mid: 60  # Medium RSI period
     rsi_long: 120  # Long RSI period
+    holding_period: 60  # Holding period in days
+    oversold: 55  # Oversold threshold for RSI
+    overbought: 75  # Overbought threshold for RSI
 
 sizer:
   type: "percent"
