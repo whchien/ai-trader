@@ -83,25 +83,25 @@ A comprehensive backtesting framework for algorithmic trading strategies built o
 **Option 1: Using Python (Quick)**
 ```python
 from ai_trader import run_backtest
-from ai_trader.backtesting.strategies.classic.sma import SMAStrategy
+from ai_trader.backtesting.strategies.classic.sma import CrossSMAStrategy
 
 # Run backtest with example data
 results = run_backtest(
-    strategy=SMAStrategy,
+    strategy=CrossSMAStrategy,
     data_source=None,  # Uses built-in example data
     cash=1000000,
     commission=0.001425,
-    strategy_params={"fast_period": 10, "slow_period": 30}
+    strategy_params={"fast": 10, "slow": 30}
 )
 ```
 
 **Option 2: Using CLI (Recommended for Production)**
 ```bash
 # Run backtest from config file
-ai-trader run config/backtest/sma_example.yaml
+ai-trader run config/backtest/classic/sma_example.yaml
 
 # Quick backtest without config
-ai-trader quick SMAStrategy data/AAPL.csv --cash 100000
+ai-trader quick CrossSMAStrategy data/us_stock/tsm.csv --cash 100000
 
 # List available strategies
 ai-trader list-strategies
@@ -141,10 +141,10 @@ print_results(results, initial_value, final_value)
 
 ```bash
 # US stocks
-ai-trader fetch AAPL --market us --start-date 2020-01-01
+ai-trader fetch AAPL --market us_stock --start-date 2020-01-01
 
 # Taiwan stocks
-ai-trader fetch 2330 --market tw --start-date 2020-01-01
+ai-trader fetch 2330 --market tw_stock --start-date 2020-01-01
 
 # Cryptocurrency
 ai-trader fetch BTC-USD --market crypto --start-date 2020-01-01
@@ -192,7 +192,7 @@ ai-trader quick <StrategyName> <data_file> [options]
 ai-trader list-strategies [--type classic|portfolio|all]
 
 # Fetch market data
-ai-trader fetch <symbol> --market <us|tw|crypto|forex> [--start-date YYYY-MM-DD] [--end-date YYYY-MM-DD]
+ai-trader fetch <symbol> --market <us_stock|tw_stock|crypto|forex|vix> [--start-date YYYY-MM-DD] [--end-date YYYY-MM-DD]
 
 # Show help
 ai-trader --help

@@ -342,12 +342,12 @@ def run_backtest(
         List of strategy instances with results
 
     Example:
-        >>> from ai_trader.backtesting.strategies.classic.sma import SMAStrategy
+        >>> from ai_trader.backtesting.strategies.classic.sma import CrossSMAStrategy
         >>> results = run_backtest(
-        ...     SMAStrategy,
-        ...     "data/AAPL.csv",
+        ...     CrossSMAStrategy,
+        ...     "data/us_stock/tsm.csv",
         ...     cash=100000,
-        ...     strategy_params={'fast_period': 10, 'slow_period': 30},
+        ...     strategy_params={'fast': 10, 'slow': 30},
         ...     plot=True
         ... )
     """

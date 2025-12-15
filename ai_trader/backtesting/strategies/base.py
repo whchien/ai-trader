@@ -1,5 +1,9 @@
 import backtrader as bt
 
+from ai_trader.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 class BaseStrategy(bt.Strategy):
     # Define column widths for consistent formatting
@@ -7,6 +11,20 @@ class BaseStrategy(bt.Strategy):
     COL_WIDTH_DETAIL1 = 20
     COL_WIDTH_DETAIL2 = 20
     COL_WIDTH_DETAIL3 = 20
+
+    def __init__(self):
+        super().__init__()
+        # Log all strategy parameters (filter out methods and private attributes)
+        params_dict = {
+            key: getattr(self.params, key)
+            for key in dir(self.params)
+            if not key.startswith("_") and not callable(getattr(self.params, key))
+        }
+        if params_dict:
+            params_str = ", ".join(f"{k}={v}" for k, v in params_dict.items())
+            logger.info(f"{self.__class__.__name__} initialized with {params_str}")
+        else:
+            logger.info(f"{self.__class__.__name__} initialized with no parameters")
 
     def log(self, txt, dt=None):
         """

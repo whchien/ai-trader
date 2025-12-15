@@ -7,6 +7,7 @@ class NaiveSMAStrategy(BaseStrategy):
     params = dict(period=15)
 
     def __init__(self):
+        super().__init__()
         self.sma = bt.indicators.MovingAverageSimple(
             self.data.close, period=self.params.period
         )
@@ -27,6 +28,7 @@ class CrossSMAStrategy(BaseStrategy):
     params = dict(fast=5, slow=37)
 
     def __init__(self):
+        super().__init__()
         self.fast_ma = bt.indicators.SMA(
             self.data.close, period=self.params.fast, plotname="fast_day_ma"
         )
