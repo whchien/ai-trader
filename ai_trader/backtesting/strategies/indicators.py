@@ -2,6 +2,10 @@ import backtrader as bt
 import numpy as np
 import statsmodels.api as sm
 
+from ai_trader.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 class RSRS(bt.Indicator):
     """
@@ -62,7 +66,8 @@ class RSRS(bt.Indicator):
             results = model.fit()
             self.lines.rsrs[0] = results.params[1]
             self.lines.R2[0] = results.rsquared
-        except Exception:
+        except Exception as e:
+            logger.warning(f"RSRS calculation failed, setting to 0: {e}")
             self.lines.rsrs[0] = 0
 
 
@@ -221,7 +226,8 @@ class DoubleTop(bt.Indicator):
         try:
             highest_past = max([p for p in self.data.close.get(ago=25, size=25)])
             cond_4 = highest_past < self.data.close[0]
-        except ValueError:
+        except ValueError as e:
+            logger.debug(f"DoubleTop condition 4 calculation failed (insufficient data), defaulting to True: {e}")
             cond_4 = True
 
         # Condition 5: Close price is greater than the close price 120 days ago
