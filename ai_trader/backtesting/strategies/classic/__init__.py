@@ -1,8 +1,10 @@
 """Classic trading strategies for single stocks."""
-
+from ai_trader.backtesting.strategies.classic.adaptive_rsi import AdaptiveRSIStrategy
+from ai_trader.backtesting.strategies.classic.alpharsi_pro import AlphaRSIProStrategy
 from ai_trader.backtesting.strategies.classic.bbands import BBandsStrategy
 from ai_trader.backtesting.strategies.classic.buyhold import BuyHoldStrategy
 from ai_trader.backtesting.strategies.classic.double_top import DoubleTopStrategy
+from ai_trader.backtesting.strategies.classic.hybrid_alpharsi import HybridAlphaRSIStrategy
 from ai_trader.backtesting.strategies.classic.macd import MACDStrategy
 from ai_trader.backtesting.strategies.classic.momentum import MomentumStrategy
 from ai_trader.backtesting.strategies.classic.risk_averse import RiskAverseStrategy
@@ -37,4 +39,7 @@ __all__ = [
     "TripleRsiStrategy",
     "TurtleTradingStrategy",
     "VCPStrategy",
+    "AlphaRSIProStrategy",
+    "AdaptiveRSIStrategy",
+    "HybridAlphaRSIStrategy"
 ]

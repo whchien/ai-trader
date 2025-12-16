@@ -298,3 +298,442 @@ class VCPPattern(bt.Indicator):
 
         # Set the VCP line value to 1 if all conditions are met, otherwise set to -1
         self.lines.vcp[0] = 1 if cond_1 & cond_2 & cond_3 else -1
+
+
+class AlphaRSIPro(bt.Indicator):
+    """
+    AlphaRSI Pro - Advanced RSI with adaptive volatility levels and trend confirmation.
+
+    This indicator combines:
+    1. Smoothed RSI to reduce noise
+    2. Adaptive overbought/oversold levels based on market volatility (ATR)
+    3. Trend bias filter using SMA slope to align signals with underlying trend
+
+    The adaptive levels widen in high volatility (requiring more extreme readings) and
+    narrow in low volatility (becoming more sensitive). Signals are only considered
+    "strong" when aligned with the trend direction.
+    """
+
+    lines = ("rsi_smooth", "ob_level", "os_level", "trend_bias", "volatility_ratio")
+
+    params = (
+        ("rsi_period", 14),
+        ("smoothing_period", 5),
+        ("smoothing_type", "SMA"),
+        ("atr_period", 14),
+        ("atr_ma_period", 50),
+        ("trend_sma_period", 50),
+        ("sensitivity", 20),
+        ("ob_base", 70),
+        ("os_base", 30),
+        ("ob_min", 65),
+        ("ob_max", 85),
+        ("os_min", 15),
+        ("os_max", 35),
+    )
+
+    def __init__(self):
+        # Calculate base RSI
+        self.rsi = bt.indicators.RSI(period=self.p.rsi_period)
+
+        # Apply smoothing to RSI
+        if self.p.smoothing_type == "WMA":
+            self.lines.rsi_smooth = bt.indicators.WeightedMovingAverage(
+                self.rsi, period=self.p.smoothing_period
+            )
+        else:  # Default to SMA
+            self.lines.rsi_smooth = bt.indicators.MovingAverageSimple(
+                self.rsi, period=self.p.smoothing_period
+            )
+
+        # Calculate volatility ratio for adaptive levels
+        self.atr = bt.indicators.ATR(period=self.p.atr_period)
+        self.atr_ma = bt.indicators.MovingAverageSimple(self.atr, period=self.p.atr_ma_period)
+
+        # Calculate trend bias using SMA
+        self.trend_sma = bt.indicators.MovingAverageSimple(
+            self.data.close, period=self.p.trend_sma_period
+        )
+
+        # Set minimum period
+        self.addminperiod(
+            max(
+                self.p.rsi_period + self.p.smoothing_period,
+                self.p.atr_ma_period,
+                self.p.trend_sma_period,
+            )
+        )
+
+    def next(self):
+        try:
+            # Calculate volatility ratio
+            if self.atr_ma[0] > 0:
+                vr = self.atr[0] / self.atr_ma[0]
+            else:
+                vr = 1.0
+            self.lines.volatility_ratio[0] = vr
+
+            # Calculate adaptive level adjustment
+            adjustment = (vr - 1) * self.p.sensitivity
+
+            # Apply adjustment and bounds to overbought level
+            ob_adaptive = self.p.ob_base + adjustment
+            self.lines.ob_level[0] = max(self.p.ob_min, min(self.p.ob_max, ob_adaptive))
+
+            # Apply adjustment and bounds to oversold level
+            os_adaptive = self.p.os_base - adjustment
+            self.lines.os_level[0] = max(self.p.os_min, min(self.p.os_max, os_adaptive))
+
+            # Calculate trend bias (+1 for uptrend, -1 for downtrend)
+            if self.trend_sma[0] > self.trend_sma[-1]:
+                self.lines.trend_bias[0] = 1
+            else:
+                self.lines.trend_bias[0] = -1
+
+        except Exception as e:
+            logger.warning(f"AlphaRSIPro calculation failed: {e}")
+            self.lines.volatility_ratio[0] = 1.0
+            self.lines.ob_level[0] = self.p.ob_base
+            self.lines.os_level[0] = self.p.os_base
+            self.lines.trend_bias[0] = 0
+
+
+class AdaptiveRSI(bt.Indicator):
+    """
+    Adaptive RSI (ARSI) - RSI with dynamic period adaptation based on market conditions.
+
+    This indicator adapts the RSI calculation period based on:
+    1. Volatility ratio (ATR vs average ATR)
+    2. Cycle detection (price change patterns)
+    3. Market factor combining both metrics
+
+    In high volatility or fast cycles, the period shortens (more responsive).
+    In low volatility or slow cycles, the period lengthens (more stable).
+    """
+
+    lines = ("rsi", "adaptive_period", "volatility_ratio", "cycle_factor", "market_factor")
+
+    params = (
+        ("rsi_length", 14),
+        ("atr_length", 14),
+        ("min_period", 8),
+        ("max_period", 28),
+        ("adaptive_sensitivity", 1.0),
+        ("smoothing_length", 3),
+        ("ob_level", 70),
+        ("os_level", 30),
+        ("extreme_ob_level", 80),
+        ("extreme_os_level", 20),
+    )
+
+    def __init__(self):
+        # Calculate ATR for volatility measurement
+        self.atr = bt.indicators.ATR(period=self.p.atr_length)
+        self.atr_sma = bt.indicators.MovingAverageSimple(self.atr, period=self.p.atr_length)
+
+        # Initialize state variables for RSI calculation
+        self.avg_gain = None
+        self.avg_loss = None
+
+        # Calculate price changes for cycle detection
+        self.price_diff = self.data.close - self.data.close(-1)
+
+        # Set minimum period
+        self.addminperiod(max(self.p.max_period, self.p.atr_length) + self.p.smoothing_length)
+
+    def prenext(self):
+        # Initialize avg_gain and avg_loss on first call with sufficient data
+        if self.avg_gain is None and len(self) >= self.p.rsi_length:
+            gains = []
+            losses = []
+            for i in range(-self.p.rsi_length + 1, 1):
+                diff = self.data.close[i] - self.data.close[i - 1]
+                if diff > 0:
+                    gains.append(diff)
+                    losses.append(0)
+                else:
+                    gains.append(0)
+                    losses.append(-diff)
+
+            self.avg_gain = np.mean(gains) if gains else 0.0
+            self.avg_loss = np.mean(losses) if losses else 0.0
+
+    def next(self):
+        try:
+            # Calculate volatility ratio
+            if self.atr_sma[0] > 0:
+                volatility_ratio = self.atr[0] / self.atr_sma[0]
+            else:
+                volatility_ratio = 1.0
+            self.lines.volatility_ratio[0] = volatility_ratio
+
+            # Calculate cycle factor
+            if len(self) >= self.p.rsi_length:
+                price_change = abs(self.data.close[0] - self.data.close[-self.p.rsi_length])
+
+                # Calculate average of absolute price changes
+                abs_changes = []
+                for i in range(self.p.rsi_length):
+                    if len(self) > i:
+                        abs_changes.append(abs(self.data.close[-i] - self.data.close[-i - 1]))
+                avg_price_change = np.mean(abs_changes) if abs_changes else 1.0
+
+                if avg_price_change > 0:
+                    cycle_factor = price_change / (avg_price_change * self.p.rsi_length)
+                else:
+                    cycle_factor = 0.0
+            else:
+                cycle_factor = 0.0
+            self.lines.cycle_factor[0] = cycle_factor
+
+            # Calculate market factor
+            market_factor = (volatility_ratio + cycle_factor) / 2.0
+            self.lines.market_factor[0] = market_factor
+
+            # Calculate adaptive period (inverse relationship with market factor)
+            period_range = self.p.max_period - self.p.min_period
+            adaptive_period_float = self.p.max_period - (
+                market_factor * period_range * self.p.adaptive_sensitivity / 10.0
+            )
+            adaptive_period = max(
+                self.p.min_period, min(self.p.max_period, adaptive_period_float)
+            )
+            self.lines.adaptive_period[0] = adaptive_period
+
+            # Calculate RSI with adaptive period
+            # Initialize if needed
+            if self.avg_gain is None:
+                self.avg_gain = 0.0
+                self.avg_loss = 0.0
+
+            # Calculate gain and loss for current bar
+            price_diff = self.data.close[0] - self.data.close[-1]
+            gain = price_diff if price_diff > 0 else 0.0
+            loss = -price_diff if price_diff < 0 else 0.0
+
+            # Update running averages with adaptive alpha
+            alpha = 2.0 / (adaptive_period + 1.0)
+            self.avg_gain = alpha * gain + (1.0 - alpha) * self.avg_gain
+            self.avg_loss = alpha * loss + (1.0 - alpha) * self.avg_loss
+
+            # Calculate RS and RSI
+            if self.avg_loss != 0:
+                rs = self.avg_gain / self.avg_loss
+                rsi_raw = 100.0 - (100.0 / (1.0 + rs))
+            else:
+                rsi_raw = 100.0
+
+            # Apply smoothing if configured
+            if self.p.smoothing_length > 1:
+                # Simple EMA smoothing
+                if not hasattr(self, "rsi_ema"):
+                    self.rsi_ema = rsi_raw
+                else:
+                    alpha_smooth = 2.0 / (self.p.smoothing_length + 1.0)
+                    self.rsi_ema = alpha_smooth * rsi_raw + (1.0 - alpha_smooth) * self.rsi_ema
+                self.lines.rsi[0] = self.rsi_ema
+            else:
+                self.lines.rsi[0] = rsi_raw
+
+        except Exception as e:
+            logger.warning(f"AdaptiveRSI calculation failed: {e}")
+            self.lines.rsi[0] = 50.0
+            self.lines.adaptive_period[0] = self.p.rsi_length
+            self.lines.volatility_ratio[0] = 1.0
+            self.lines.cycle_factor[0] = 0.0
+            self.lines.market_factor[0] = 1.0
+
+
+class HybridAlphaRSI(bt.Indicator):
+    """
+    Hybrid AlphaRSI - Most sophisticated RSI variant combining all enhancements.
+
+    This indicator combines:
+    1. Adaptive RSI period (from Adaptive RSI) - responds to volatility and cycles
+    2. Adaptive overbought/oversold levels (from AlphaRSI Pro) - widens/narrows with volatility
+    3. Trend bias filter (from AlphaRSI Pro) - aligns signals with underlying trend
+
+    This is the most complex but potentially most effective approach, using dynamic
+    calculation period AND dynamic thresholds with trend confirmation.
+    """
+
+    lines = (
+        "rsi",
+        "adaptive_period",
+        "ob_level",
+        "os_level",
+        "trend_bias",
+        "volatility_ratio",
+        "market_factor",
+    )
+
+    params = (
+        ("rsi_length", 14),
+        ("atr_length", 14),
+        ("atr_ma_period", 50),
+        ("min_period", 8),
+        ("max_period", 28),
+        ("adaptive_sensitivity", 1.0),
+        ("smoothing_length", 3),
+        ("trend_sma_period", 50),
+        ("level_sensitivity", 20),
+        ("ob_base", 70),
+        ("os_base", 30),
+        ("ob_min", 65),
+        ("ob_max", 85),
+        ("os_min", 15),
+        ("os_max", 35),
+    )
+
+    def __init__(self):
+        # Calculate ATR for both volatility ratio and adaptive period
+        self.atr = bt.indicators.ATR(period=self.p.atr_length)
+        self.atr_sma_short = bt.indicators.MovingAverageSimple(
+            self.atr, period=self.p.atr_length
+        )
+        self.atr_sma_long = bt.indicators.MovingAverageSimple(
+            self.atr, period=self.p.atr_ma_period
+        )
+
+        # Calculate trend bias using SMA
+        self.trend_sma = bt.indicators.MovingAverageSimple(
+            self.data.close, period=self.p.trend_sma_period
+        )
+
+        # Initialize state variables for adaptive RSI calculation
+        self.avg_gain = None
+        self.avg_loss = None
+
+        # Set minimum period
+        self.addminperiod(
+            max(
+                self.p.max_period,
+                self.p.atr_ma_period,
+                self.p.trend_sma_period,
+            )
+            + self.p.smoothing_length
+        )
+
+    def prenext(self):
+        # Initialize avg_gain and avg_loss on first call with sufficient data
+        if self.avg_gain is None and len(self) >= self.p.rsi_length:
+            gains = []
+            losses = []
+            for i in range(-self.p.rsi_length + 1, 1):
+                diff = self.data.close[i] - self.data.close[i - 1]
+                if diff > 0:
+                    gains.append(diff)
+                    losses.append(0)
+                else:
+                    gains.append(0)
+                    losses.append(-diff)
+
+            self.avg_gain = np.mean(gains) if gains else 0.0
+            self.avg_loss = np.mean(losses) if losses else 0.0
+
+    def next(self):
+        try:
+            # === Part 1: Calculate volatility ratio (for adaptive levels) ===
+            if self.atr_sma_long[0] > 0:
+                vr_levels = self.atr[0] / self.atr_sma_long[0]
+            else:
+                vr_levels = 1.0
+
+            # === Part 2: Calculate market factor (for adaptive period) ===
+            if self.atr_sma_short[0] > 0:
+                vr_period = self.atr[0] / self.atr_sma_short[0]
+            else:
+                vr_period = 1.0
+
+            # Calculate cycle factor
+            if len(self) >= self.p.rsi_length:
+                price_change = abs(self.data.close[0] - self.data.close[-self.p.rsi_length])
+
+                # Calculate average of absolute price changes
+                abs_changes = []
+                for i in range(self.p.rsi_length):
+                    if len(self) > i:
+                        abs_changes.append(abs(self.data.close[-i] - self.data.close[-i - 1]))
+                avg_price_change = np.mean(abs_changes) if abs_changes else 1.0
+
+                if avg_price_change > 0:
+                    cycle_factor = price_change / (avg_price_change * self.p.rsi_length)
+                else:
+                    cycle_factor = 0.0
+            else:
+                cycle_factor = 0.0
+
+            # Calculate market factor
+            market_factor = (vr_period + cycle_factor) / 2.0
+            self.lines.market_factor[0] = market_factor
+            self.lines.volatility_ratio[0] = vr_levels
+
+            # === Part 3: Calculate adaptive period ===
+            period_range = self.p.max_period - self.p.min_period
+            adaptive_period_float = self.p.max_period - (
+                market_factor * period_range * self.p.adaptive_sensitivity / 10.0
+            )
+            adaptive_period = max(
+                self.p.min_period, min(self.p.max_period, adaptive_period_float)
+            )
+            self.lines.adaptive_period[0] = adaptive_period
+
+            # === Part 4: Calculate adaptive levels ===
+            adjustment = (vr_levels - 1) * self.p.level_sensitivity
+
+            ob_adaptive = self.p.ob_base + adjustment
+            self.lines.ob_level[0] = max(self.p.ob_min, min(self.p.ob_max, ob_adaptive))
+
+            os_adaptive = self.p.os_base - adjustment
+            self.lines.os_level[0] = max(self.p.os_min, min(self.p.os_max, os_adaptive))
+
+            # === Part 5: Calculate trend bias ===
+            if self.trend_sma[0] > self.trend_sma[-1]:
+                self.lines.trend_bias[0] = 1
+            else:
+                self.lines.trend_bias[0] = -1
+
+            # === Part 6: Calculate RSI with adaptive period ===
+            # Initialize if needed
+            if self.avg_gain is None:
+                self.avg_gain = 0.0
+                self.avg_loss = 0.0
+
+            # Calculate gain and loss for current bar
+            price_diff = self.data.close[0] - self.data.close[-1]
+            gain = price_diff if price_diff > 0 else 0.0
+            loss = -price_diff if price_diff < 0 else 0.0
+
+            # Update running averages with adaptive alpha
+            alpha = 2.0 / (adaptive_period + 1.0)
+            self.avg_gain = alpha * gain + (1.0 - alpha) * self.avg_gain
+            self.avg_loss = alpha * loss + (1.0 - alpha) * self.avg_loss
+
+            # Calculate RS and RSI
+            if self.avg_loss != 0:
+                rs = self.avg_gain / self.avg_loss
+                rsi_raw = 100.0 - (100.0 / (1.0 + rs))
+            else:
+                rsi_raw = 100.0
+
+            # Apply smoothing if configured
+            if self.p.smoothing_length > 1:
+                # Simple EMA smoothing
+                if not hasattr(self, "rsi_ema"):
+                    self.rsi_ema = rsi_raw
+                else:
+                    alpha_smooth = 2.0 / (self.p.smoothing_length + 1.0)
+                    self.rsi_ema = alpha_smooth * rsi_raw + (1.0 - alpha_smooth) * self.rsi_ema
+                self.lines.rsi[0] = self.rsi_ema
+            else:
+                self.lines.rsi[0] = rsi_raw
+
+        except Exception as e:
+            logger.warning(f"HybridAlphaRSI calculation failed: {e}")
+            self.lines.rsi[0] = 50.0
+            self.lines.adaptive_period[0] = self.p.rsi_length
+            self.lines.ob_level[0] = self.p.ob_base
+            self.lines.os_level[0] = self.p.os_base
+            self.lines.trend_bias[0] = 0
+            self.lines.volatility_ratio[0] = 1.0
+            self.lines.market_factor[0] = 1.0

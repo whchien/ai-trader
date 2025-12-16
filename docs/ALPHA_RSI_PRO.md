@@ -1,4 +1,4 @@
-Certainly. Here is a summary of the AlphaRSI Pro technical indicator, detailing its methodology and mathematical components, as implemented in the `backtrader` example.## 🚀 AlphaRSI Pro Indicator Summary
+# AlphaRSI Pro
 
 AlphaRSI Pro is an advanced momentum indicator built on the standard Relative Strength Index (RSI), incorporating adaptive volatility levels and trend confirmation to reduce false signals.
 

@@ -7,56 +7,23 @@
 
 A comprehensive backtesting framework for algorithmic trading strategies built on Backtrader. Test and optimize your trading strategies across US stocks, Taiwan stocks, cryptocurrencies, and forex markets.
 
-**Version 0.2.0** introduces a new architecture with utility functions, CLI tools, and config-driven workflows for professional backtesting.
+**Version 0.3.0** introduces a new architecture with utility functions, CLI tools, and config-driven workflows for professional backtesting.
 
 ![Demo GIF](data/demo_bt.gif)
 
-## ✨ What's New in v0.2.0
+## ✨ What's New in v0.3.0
 
 - **New CLI Tool** - Run backtests from YAML configs
 - **Utility Functions** - Simple helpers for common tasks
 - **Config-Driven** - Version-controlled, reproducible backtests
-- **20+ Strategies** - Ready-to-use trading strategies
+- **20+ Strategies** - Ready-to-use trading strategies including new AlphaRSI variants
 - **Multi-Market** - US stocks, TW stocks, crypto, and forex support
 - **Rich Examples** - 5 example scripts and 4 config templates
 
-## Strategy overview
-### Single Stock Trading Strategies
-
-| Strategy                  | Description                                                                                             |
-| :------------------------ | :------------------------------------------------------------------------------------------------------ |
-| **Buy & Hold**            | Buys on the first day and holds to the end. A baseline for performance comparison.                        |
-| **SMA (Naive)**           | Buys when price is above a moving average, sells when below.                                            |
-| **SMA (Crossover)**       | Buys on a "golden cross" (fast MA over slow MA), sells on a "death cross".                              |
-| **MACD**                  | Buys on a MACD "golden cross" and sells on a "death cross".                                             |
-| **Bollinger Bands**       | A mean-reversion strategy that buys at the lower band and sells at the upper band.                      |
-| **Momentum**              | Buys when momentum turns positive, sells when price falls below a trend-filtering MA.                   |
-| **RSI**                   | Combines RSI and Bollinger Bands. Buys when RSI is oversold and price is below the lower band.          |
-| **RSRS**                  | Uses linear regression of high/low prices to buy on signals of strengthening support.                     |
-| **ROC**                   | A simple momentum strategy that buys on a high Rate of Change and sells on a low one.                   |
-| **Double Top**            | Buys on a breakout after a double top pattern, with trend and volume confirmation.                      |
-| **Risk Averse**           | Buys low-volatility stocks making new highs on high volume.                                             |
-| **Turtle Trading**        | A classic trend-following strategy that buys on breakouts and sells on breakdowns, using ATR for position sizing. |
-| **Volatility Contraction Pattern (VCP)** | Buys on breakouts after price and volume volatility have contracted.                    |
-
-### Portfolio Trading Strategies
-
-| Strategy                    | Description                                                                                         |
-| :-------------------------- | :-------------------------------------------------------------------------------------------------- |
-| **ROC Rotation**            | Periodically rotates into the top K stocks with the highest Rate of Change (momentum).              |
-| **RSRS Rotation**           | Periodically rotates into stocks with high RSRS indicator values (strong support).                  |
-| **Triple RSI Rotation**     | Rotates stocks based on a combination of long, medium, and short-term RSI signals.                  |
-| **Multi Bollinger Bands Rotation** | A breakout rotation strategy that buys stocks crossing above their upper Bollinger Band.     |
-
-### Machine learning based (dev)
-- Logistic regression
-- Feature engineering
-- Gradient boosting
-- DNN
-- RNN
-- LSTM
-- Reinforcemnt learning
-- (More to come!)
+### Latest Additions
+- **AlphaRSI Pro** - Advanced RSI with adaptive volatility levels and trend filtering
+- **Adaptive RSI** - Dynamic RSI period that adapts to market conditions
+- **Hybrid AlphaRSI** - Combines all adaptive features for superior signal quality
 
 ## Quick Start
 
@@ -69,6 +36,13 @@ A comprehensive backtesting framework for algorithmic trading strategies built o
     ```
 
 2. **Install dependencies:**
+
+    **Option A: Using Poetry (Recommended)**
+    ```bash
+    poetry install
+    ```
+
+    **Option B: Using pip**
     ```bash
     pip install -r requirements.txt
     ```
@@ -318,7 +292,7 @@ ai-trader/
 ├── ai_trader/                  # Main package
 │   ├── backtesting/           # Backtesting components
 │   │   └── strategies/        # Trading strategies
-│   │       ├── classic/       # Single-stock strategies (13)
+│   │       ├── classic/       # Single-stock strategies (16)
 │   │       └── portfolio/     # Multi-stock strategies (3)
 │   ├── core/                  # Core utilities
 │   │   ├── config.py          # Configuration management
@@ -357,10 +331,9 @@ ai-trader/
 
 ## Documentation & Resources
 
-- **[Migration Guide](docs/MIGRATION_GUIDE.md)** - Upgrading from v0.1.x to v0.2.0
+- **[Strategy Overview](ai_trader/backtesting/strategies/README.md)** - Upgrading from v0.1.x to v0.2.0
 - **[Example Scripts](scripts/examples/)** - 5 complete working examples
 - **[Config Examples](config/backtest/)** - YAML configuration templates
-- **[Refactoring Summary](docs/REFACTORING_SUMMARY.md)** - Technical details of v0.2.0
 
 ### Example Scripts
 
@@ -381,12 +354,12 @@ python scripts/examples/01_simple_backtest.py
 
 ```python
 from ai_trader import run_backtest
-from ai_trader.backtesting.strategies.classic.sma import SMAStrategy
-from ai_trader.backtesting.strategies.classic.rsi import RSIStrategy
+from ai_trader.backtesting.strategies.classic.sma import CrossSMAStrategy
+from ai_trader.backtesting.strategies.classic.rsi import RsiBollingerBandsStrategy
 
 strategies = [
-    (SMAStrategy, {"fast_period": 10, "slow_period": 30}),
-    (RSIStrategy, {"rsi_period": 14, "oversold": 30})
+    (CrossSMAStrategy, {"fast": 10, "slow": 30}),
+    (RsiBollingerBandsStrategy, {"rsi_period": 14, "oversold": 30})
 ]
 
 for strategy, params in strategies:
