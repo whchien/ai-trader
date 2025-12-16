@@ -1,0 +1,14 @@
+data:
+  market: tw
+  start_year: 2019
+  start_month: 1
+  data_dir: ./data/tw_stock/
+
+broker:
+  cash: 1000000
+  commission: 0.001425
+  stake: 0.95
+
+backtest:
+  start_date: null
+  end_date: null

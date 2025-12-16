@@ -1,0 +1,31 @@
+# Example configuration for Double Top strategy backtest
+
+broker:
+  cash: 1000000
+  commission: 0.001425  # Taiwan stock commission rate
+
+data:
+  file: "data/us_stock/tsm.csv"  # Path to single stock CSV file
+  start_date: "2020-01-01"
+  end_date: "2025-12-01"
+  date_col: "date"
+
+strategy:
+  class: "DoubleTopStrategy"  # Strategy class name
+  params:
+    sma_short: 60  # Short SMA period
+    sma_long: 120  # Long SMA period
+    vol_short: 5  # Short volume period
+    vol_long: 20  # Long volume period
+    past_highest: 60  # Period for highest price
+
+sizer:
+  type: "percent"
+  params:
+    percents: 95  # Use 95% of available capital per trade
+
+analyzers:
+  - sharpe
+  - drawdown
+  - returns
+  - trades

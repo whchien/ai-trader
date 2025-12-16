@@ -1,0 +1,183 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-trader"
+version = "0.3.0"
+description = "Professional algorithmic trading backtesting framework using Backtrader"
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+license = {text = "MIT"}
+authors = [
+    {name = "Will Chien"}
+]
+keywords = ["trading", "backtesting", "algorithmic-trading", "finance", "backtrader", "technical-analysis"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial Industry",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "backtrader==1.9.78.123",
+    "pandas>=2.0.0,<3.0.0",
+    "numpy>=1.24.0,<2.0.0",
+    "matplotlib>=3.7.0,<4.0.0",
+    "yfinance>=0.2.0",
+    "twstock>=1.4.0",
+    "TA-Lib>=0.4.0",
+    "statsmodels>=0.14.0",
+    "scipy>=1.10.0",
+    "lxml>=5.2.2",
+    "click>=8.0.0",
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0.0",
+    "requests>=2.32.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-benchmark>=4.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.4.8",
+    "pre-commit>=3.0.0",
+    "types-pyyaml>=6.0.0",
+    "types-requests>=2.31.0",
+    "bandit>=1.7.0",
+    "pip-audit>=2.6.0",
+]
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=1.3.0",
+    "sphinx-autodoc-typehints>=1.24.0",
+]
+notebook = [
+    "jupyter>=1.0.0",
+    "nbval>=0.10.0",
+    "ipykernel>=6.25.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/whchien/ai-trader"
+Documentation = "https://ai-trader.readthedocs.io"
+Repository = "https://github.com/whchien/ai-trader"
+Issues = "https://github.com/whchien/ai-trader/issues"
+
+[project.scripts]
+ai-trader = "ai_trader.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ai_trader*"]
+exclude = ["tests*", "docs*", "notebooks*"]
+
+# Ruff configuration
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+]
+
+[tool.ruff.lint]
+# Enable: pycodestyle errors (E), pyflakes (F), isort (I), pep8-naming (N),
+# pycodestyle warnings (W), pyupgrade (UP)
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+"tests/*" = ["E501"]  # Allow long lines in tests
+
+[tool.ruff.lint.isort]
+known-first-party = ["ai_trader"]
+
+# Pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=ai_trader",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["ai_trader"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+
+# Mypy configuration
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Start permissive, will enable later
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "backtrader.*",
+    "twstock.*",
+    "yfinance.*",
+    "talib.*",
+    "statsmodels.*",
+    "matplotlib.*",
+]
+ignore_missing_imports = true
+
+# Bandit configuration
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "build", "dist"]
+skips = ["B101"]  # Skip assert warnings (OK in tests)

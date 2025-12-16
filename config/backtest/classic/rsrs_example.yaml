@@ -1,0 +1,29 @@
+# Example configuration for RSRS (Resistance Support Relative Strength) strategy backtest
+
+broker:
+  cash: 1000000
+  commission: 0.001425  # Taiwan stock commission rate
+
+data:
+  file: "data/us_stock/tsm.csv"  # Path to single stock CSV file
+  start_date: "2020-01-01"
+  end_date: "2025-12-01"
+  date_col: "date"
+
+strategy:
+  class: "RSRSStrategy"  # Strategy class name
+  params:
+    period: 20  # RSRS calculation period
+    buy_threshold: 0.8  # Buy signal threshold
+    close_threshold: 0.5  # Close position threshold
+
+sizer:
+  type: "percent"
+  params:
+    percents: 95  # Use 95% of available capital per trade
+
+analyzers:
+  - sharpe
+  - drawdown
+  - returns
+  - trades

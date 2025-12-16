@@ -1,0 +1,1 @@
+"""Core utilities and configurations for the trading backtester."""
