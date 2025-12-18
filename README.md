@@ -348,6 +348,70 @@ Run any example:
 python scripts/examples/01_simple_backtest.py
 ```
 
+## 🌐 MCP Server Integration
+
+### Running as an MCP Server
+
+The ai-trader framework can be run as a Model Context Protocol (MCP) server, enabling LLMs like Claude to interact with your backtesting engine through a standardized protocol.
+
+#### Starting the Server
+
+**Option 1: Direct Command**
+```bash
+python -m ai_trader.mcp
+```
+
+**Option 2: Using FastMCP CLI**
+```bash
+fastmcp dev ai_trader/mcp/server.py
+```
+
+#### Claude Desktop Configuration
+
+To integrate ai-trader with Claude Desktop, add the following to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "ai-trader": {
+      "command": "python",
+      "args": ["-m", "ai_trader.mcp"],
+      "cwd": "/path/to/ai-trader"
+    }
+  }
+}
+```
+
+Replace `/path/to/ai-trader` with your actual project directory path.
+
+#### Available MCP Tools
+
+The MCP server exposes 4 powerful tools:
+
+1. **run_backtest** - Execute backtest from YAML configuration file
+   - Supports strategy overrides, cash adjustment, and commission configuration
+   - Works with single-stock strategies
+
+2. **quick_backtest** - Quick backtest without configuration
+   - Simplified interface for ad-hoc testing
+   - Uses default position sizing (95%)
+
+3. **fetch_market_data** - Download and save market data
+   - Supports: US stocks, Taiwan stocks, crypto, forex, VIX
+   - Batch mode for multiple symbols
+
+4. **list_strategies** - List all available strategies
+   - Returns classic (single-stock) and portfolio strategies
+   - Includes strategy descriptions
+
+#### Example Usage via Claude
+
+Once configured in Claude Desktop, you can ask Claude to:
+- "Run a backtest of the NaiveSMAStrategy on TSM data from 2020-2022"
+- "List all available trading strategies and their descriptions"
+- "Fetch Apple stock data from 2020 to 2024"
+- "Compare the performance of different strategies"
+
 ## 🔧 Advanced Usage
 
 ### Compare Multiple Strategies
