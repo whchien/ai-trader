@@ -5,14 +5,15 @@
 
 [中文版說明 (Chinese Subpage)](README_zh.md)
 
-A comprehensive backtesting framework for algorithmic trading strategies built on Backtrader. Test and optimize your trading strategies across US stocks, Taiwan stocks, cryptocurrencies, and forex markets.
+A comprehensive backtesting framework for algorithmic trading strategies built on Backtrader. Test and optimize your trading strategies across US stocks, Taiwan stocks, cryptocurrencies, and forex markets. Now with **MCP server support** for seamless LLM integration.
 
-**Version 0.3.0** introduces a new architecture with utility functions, CLI tools, and config-driven workflows for professional backtesting.
+**Version 0.3.0** introduces a new architecture with utility functions, CLI tools, config-driven workflows, and an MCP server for professional backtesting and AI integration.
 
 ![Demo GIF](data/demo_bt.gif)
 
 ## ✨ What's New in v0.3.0
 
+- **MCP Server** - Model Context Protocol server for LLM integration with Claude Desktop
 - **New CLI Tool** - Run backtests from YAML configs
 - **Utility Functions** - Simple helpers for common tasks
 - **Config-Driven** - Version-controlled, reproducible backtests
@@ -21,6 +22,7 @@ A comprehensive backtesting framework for algorithmic trading strategies built o
 - **Rich Examples** - 5 example scripts and 4 config templates
 
 ### Latest Additions
+- **FastMCP Server** - Run as standalone MCP server for AI/LLM integration
 - **AlphaRSI Pro** - Advanced RSI with adaptive volatility levels and trend filtering
 - **Adaptive RSI** - Dynamic RSI period that adapts to market conditions
 - **Hybrid AlphaRSI** - Combines all adaptive features for superior signal quality
