@@ -1,3 +1,4 @@
+import time
 import warnings
 from typing import Optional
 
@@ -5,8 +6,10 @@ import pandas as pd
 from twstock import Stock
 
 from ai_trader.core import DataFetchError, DataValidationError
+from ai_trader.core.logging import get_logger
 from ai_trader.data.fetchers import BaseFetcher
-from ai_trader.data.fetchers.base import logger
+
+logger = get_logger(__name__)
 
 # Disable SSL warnings when we bypass verification
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
@@ -36,7 +39,14 @@ class TWStockFetcher(BaseFetcher):
         >>> print(df.head())
     """
 
-    def __init__(self, symbol: str, start_date: str, end_date: Optional[str] = None):
+    def __init__(
+        self,
+        symbol: str,
+        start_date: str,
+        end_date: Optional[str] = None,
+        max_retries: int = 3,
+        retry_delay: int = 2,
+    ):
         """
         Initialize Taiwan stock data fetcher.
 
@@ -44,6 +54,8 @@ class TWStockFetcher(BaseFetcher):
             symbol: Stock ID (e.g., '2330')
             start_date: Start date (YYYY-MM-DD)
             end_date: End date (YYYY-MM-DD), used for filtering
+            max_retries: Maximum number of retry attempts
+            retry_delay: Base delay between retries in seconds
 
         Raises:
             ValueError: If date format is invalid
@@ -51,6 +63,8 @@ class TWStockFetcher(BaseFetcher):
         self.symbol = symbol
         self.start_date = start_date
         self.end_date = end_date
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
 
         # Parse start_date to get year and month for twstock
         try:
@@ -69,83 +83,104 @@ class TWStockFetcher(BaseFetcher):
 
     def fetch(self) -> pd.DataFrame:
         """
-        Fetch Taiwan stock data from twstock.
+        Fetch Taiwan stock data from twstock with retry logic.
 
         Returns:
             DataFrame with lowercase columns: ['open', 'high', 'low', 'close', 'volume']
             Index: DatetimeIndex named 'date'
 
         Raises:
-            DataFetchError: If download fails
+            DataFetchError: If download fails after all retries
             DataValidationError: If data is invalid
         """
         logger.info(f"Fetching TW stock data for {self.symbol}")
 
-        try:
-            # Monkey-patch requests to disable SSL verification for twstock
-            # This is necessary because Python 3.13+ has stricter SSL requirements
-            # and TWSE certificates are missing Subject Key Identifier
-            import requests
-
-            original_get = requests.get
-
-            def patched_get(*args, **kwargs):
-                kwargs["verify"] = False
-                return original_get(*args, **kwargs)
-
-            requests.get = patched_get
-
+        for attempt in range(1, self.max_retries + 1):
             try:
-                # Fetch from twstock
-                stock = Stock(self.symbol)
-                stock.fetch_from(year=self.start_year, month=self.start_month)
-            finally:
-                # Restore original requests.get
-                requests.get = original_get
+                # Monkey-patch requests to disable SSL verification for twstock
+                # This is necessary because Python 3.13+ has stricter SSL requirements
+                # and TWSE certificates are missing Subject Key Identifier
+                import requests
 
-            if not stock.data:
-                raise DataFetchError(
-                    f"No data returned for {self.symbol}", symbol=self.symbol, source="twstock"
+                original_get = requests.get
+
+                def patched_get(*args, **kwargs):
+                    kwargs["verify"] = False
+                    return original_get(*args, **kwargs)
+
+                requests.get = patched_get
+
+                try:
+                    # Fetch from twstock
+                    stock = Stock(self.symbol)
+                    stock.fetch_from(year=self.start_year, month=self.start_month)
+                finally:
+                    # Restore original requests.get
+                    requests.get = original_get
+
+                if not stock.data:
+                    logger.warning(f"No data returned for {self.symbol} (attempt {attempt}/{self.max_retries})")
+                    if attempt == self.max_retries:
+                        raise DataFetchError(
+                            f"No data returned for {self.symbol}", symbol=self.symbol, source="twstock"
+                        )
+                    continue
+
+                # Convert to DataFrame
+                data_dicts = [d._asdict() for d in stock.data]
+                df = pd.DataFrame(data_dicts)
+
+                # twstock returns: date, capacity, turnover, open, high, low, close, change, transaction
+                # We want: date (index), open, high, low, close, volume
+                df = df[["date", "open", "high", "low", "close", "capacity"]]
+                df = df.rename(columns={"capacity": "volume"})
+
+                # Set date as index
+                df["date"] = pd.to_datetime(df["date"])
+                df = df.set_index("date")
+
+                # Filter by end_date if provided
+                if self.end_date:
+                    end_dt = pd.to_datetime(self.end_date)
+                    df = df[df.index <= end_dt]
+
+                # Validate
+                self._validate_dataframe(df, self.symbol)
+
+                logger.info(
+                    f"Successfully fetched {len(df)} rows for {self.symbol} "
+                    f"from {df.index[0]} to {df.index[-1]} (attempt {attempt}/{self.max_retries})"
                 )
 
-            # Convert to DataFrame
-            data_dicts = [d._asdict() for d in stock.data]
-            df = pd.DataFrame(data_dicts)
+                return df
 
-            # twstock returns: date, capacity, turnover, open, high, low, close, change, transaction
-            # We want: date (index), open, high, low, close, volume
-            df = df[["date", "open", "high", "low", "close", "capacity"]]
-            df = df.rename(columns={"capacity": "volume"})
+            except (ConnectionError, TimeoutError) as e:
+                logger.warning(
+                    f"Network error for {self.symbol} (attempt {attempt}/{self.max_retries}): {e}"
+                )
+                if attempt == self.max_retries:
+                    raise DataFetchError(
+                        f"Network error fetching {self.symbol}: {e}",
+                        symbol=self.symbol,
+                        source="twstock",
+                    ) from e
 
-            # Set date as index
-            df["date"] = pd.to_datetime(df["date"])
-            df = df.set_index("date")
+            except Exception as e:
+                if isinstance(e, (DataFetchError, DataValidationError)):
+                    raise
+                logger.warning(
+                    f"Unexpected error for {self.symbol} (attempt {attempt}/{self.max_retries}): {e}"
+                )
+                if attempt == self.max_retries:
+                    raise DataFetchError(
+                        f"Failed to fetch {self.symbol}: {e}", symbol=self.symbol, source="twstock"
+                    ) from e
 
-            # Filter by end_date if provided
-            if self.end_date:
-                end_dt = pd.to_datetime(self.end_date)
-                df = df[df.index <= end_dt]
-
-            # Validate
-            self._validate_dataframe(df, self.symbol)
-
-            logger.info(
-                f"Successfully fetched {len(df)} rows for {self.symbol} "
-                f"from {df.index[0]} to {df.index[-1]}"
-            )
-
-            return df
-
-        except (ConnectionError, TimeoutError) as e:
-            raise DataFetchError(
-                f"Network error fetching {self.symbol}: {e}", symbol=self.symbol, source="twstock"
-            ) from e
-        except Exception as e:
-            if isinstance(e, (DataFetchError, DataValidationError)):
-                raise
-            raise DataFetchError(
-                f"Failed to fetch {self.symbol}: {e}", symbol=self.symbol, source="twstock"
-            ) from e
+            # Wait before retrying (exponential backoff)
+            if attempt < self.max_retries:
+                delay = self.retry_delay * (2 ** (attempt - 1))
+                logger.debug(f"Retrying {self.symbol} in {delay} seconds...")
+                time.sleep(delay)
 
     def fetch_batch(self, symbols: list[str]) -> tuple[dict[str, pd.DataFrame], list[str]]:
         """

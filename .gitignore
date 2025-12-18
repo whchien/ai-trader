@@ -8,6 +8,8 @@ _data/
 # C extensions
 *.so
 
+.claude/
+
 # Distribution / packaging
 .Python
 develop-eggs/

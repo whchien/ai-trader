@@ -1,61 +1,436 @@
 # ai-trader
-[英文版說明 (English Subpage)](README.md)
 
-這個專案展示了如何使用 Backtrader 事件驅動的回測框架，實現20多種演算法交易策略，包括美股和台股的範例。
+[![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-部分程式碼仍在開發中，功能未必全然齊全和乾淨，但我正在積極進行更新和改進。
+[English Version (英文版)](README.md)
 
-例如，使用三重RSI輪換策略來管理股票投資組合。
+一個基於 Backtrader 的綜合回測框架，用於演算法交易策略。跨越美股、台股、加密貨幣和外匯市場測試和優化交易策略。
+
+**版本 0.3.0** 引入了全新架構，包含工具函式、CLI 工具和設定驅動工作流程，適用於專業回測。
+
 ![Demo GIF](data/demo_bt.gif)
 
-## About me
-我是一個在荷蘭工作的台灣人，平常在銀行當資料科學家訓練AI，今年我開始自學台股美股的程式交易。有賴許多網路社群前輩幫助，所以我與想把自己一些學習心得跟社群分享。
+## ✨ v0.3.0 的新功能
 
-## 策略概述
-### 單一股票交易
-- 均線交叉
-- 布林帶
-- 動量
-- 相對強度指數（RSI）
-- 阻力支撐相對強度（RSRS）
-- 變動率指標（ROC）
-- 雙頂
-- 風險迴避
-- 海龜交易法
-- 交易股價波動收縮（VCP）
-### 投資組合交易
-- ROC輪動
-- RSRS輪動
-- 三重RSI輪動
-- 多布林帶輪動
-### 機器學習策略（開發中）
-- 邏輯回歸
-- 特徵工程
-- 梯度提升模型
-- 深度神經網絡
-- 循環神經網路
-- 長短期記憶網絡
-- 強化學習
-（更多即將推出！）
+- **新 CLI 工具** - 從 YAML 設定檔執行回測
+- **工具函式** - 常見任務的簡單輔助函式
+- **設定驅動** - 版本控制、可重現回測
+- **20+ 策略** - 包含新 AlphaRSI 變種的即用型交易策略
+- **多市場支持** - 美股、台股、加密貨幣和外匯支持
+- **豐富範例** - 5 個範例腳本和 4 個設定樣板
 
-## 如何開始
-1. 複製專案到本地端:
-    ```
-    git https://github.com/whchien/ai-trader.git
+### 最新新增
+- **AlphaRSI Pro** - 先進的 RSI，具有自適應波動率級別和趨勢過濾
+- **自適應 RSI** - 動態 RSI 週期，根據市場條件自動調整
+- **混合 AlphaRSI** - 結合所有自適應功能以獲得優越的信號質量
+
+## 快速開始
+
+### 安裝
+
+1. **複製程式庫：**
+    ```bash
+    git clone https://github.com/whchien/ai-trader.git
     cd ai-trader
     ```
-2. 安裝相關套件:
-    ```
-    pip install -r requirements.txt
-    ```
-3. （非必須）下載台股或美股資料
-    ```
-    python ai_trader/loader.py
-    ```
-4. 測試第一個策略
-    ```
-    python ai_trader/strategy/classic/bbands.py 
+
+2. **安裝套件：**
+
+    **選項 A：使用 Poetry（推薦）**
+    ```bash
+    poetry install
     ```
 
-## 教學筆記
-將來我計畫免費分享一些教學筆記本，與社群分享我的學習成果。如果你覺得有幫助，請給這個專案一個星星 ⭐️。你的支持對我意義重大。
+    **選項 B：使用 pip**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3. **安裝套件**（選擇性，用於 CLI 存取）：
+    ```bash
+    pip install -e .
+    ```
+
+### 運行第一次回測
+
+**選項 1：使用 Python（快速）**
+```python
+from ai_trader import run_backtest
+from ai_trader.backtesting.strategies.classic.sma import CrossSMAStrategy
+
+# 使用範例資料執行回測
+results = run_backtest(
+    strategy=CrossSMAStrategy,
+    data_source=None,  # 使用內建範例資料
+    cash=1000000,
+    commission=0.001425,
+    strategy_params={"fast": 10, "slow": 30}
+)
+```
+
+**選項 2：使用 CLI（推薦用於正式環境）**
+```bash
+# 從設定檔執行回測
+ai-trader run config/backtest/classic/sma_example.yaml
+
+# 快速回測，無需設定
+ai-trader quick CrossSMAStrategy data/us_stock/tsm.csv --cash 100000
+
+# 列出可用策略
+ai-trader list-strategies
+```
+
+**選項 3：逐步控制**
+```python
+from ai_trader.utils.backtest import (
+    create_cerebro, add_stock_data, add_sizer,
+    add_default_analyzers, print_results
+)
+from ai_trader.backtesting.strategies.classic.bbands import BBandsStrategy
+
+# 1. 建立 cerebro
+cerebro = create_cerebro(cash=500000, commission=0.001)
+
+# 2. 新增資料
+add_stock_data(cerebro, source="data/AAPL.csv")
+
+# 3. 新增策略
+cerebro.addstrategy(BBandsStrategy, period=20, devfactor=2.0)
+
+# 4. 設定
+add_sizer(cerebro, "percent", percents=90)
+add_default_analyzers(cerebro)
+
+# 5. 執行
+initial_value = cerebro.broker.getvalue()
+results = cerebro.run()
+final_value = cerebro.broker.getvalue()
+
+# 6. 查看結果
+print_results(results, initial_value, final_value)
+```
+
+### 下載市場資料
+
+```bash
+# 美股
+ai-trader fetch AAPL --market us_stock --start-date 2020-01-01
+
+# 台股
+ai-trader fetch 2330 --market tw_stock --start-date 2020-01-01
+
+# 加密貨幣
+ai-trader fetch BTC-USD --market crypto --start-date 2020-01-01
+
+# 外匯
+ai-trader fetch EURUSD=X --market forex --start-date 2020-01-01
+```
+
+**使用 Python API：**
+```python
+from ai_trader.data.fetchers import ForexDataFetcher
+
+# 取得歐元/美元資料
+fetcher = ForexDataFetcher(
+    symbol="EURUSD=X",
+    start_date="2020-01-01",
+    end_date="2024-12-31"
+)
+df = fetcher.fetch()
+print(df.head())
+
+# 常見外匯交易對
+# 歐元/美元：'EURUSD=X'
+# 英鎊/美元：'GBPUSD=X'
+# 美元/日圓：'JPY=X'
+# 美元/瑞郎：'CHF=X'
+# 美元/加幣：'CAD=X'
+# 澳幣/美元：'AUDUSD=X'
+```
+
+**注意：** 外匯資料的成交量為零，因為外匯市場是分散的，沒有集中交易所提供成交量資料。
+
+## CLI 參考
+
+### 可用命令
+
+```bash
+# 從設定檔執行回測
+ai-trader run <config.yaml> [--strategy <name>] [--cash <amount>] [--commission <rate>]
+
+# 快速回測，無需設定
+ai-trader quick <StrategyName> <data_file> [options]
+
+# 列出可用策略
+ai-trader list-strategies [--type classic|portfolio|all]
+
+# 取得市場資料
+ai-trader fetch <symbol> --market <us_stock|tw_stock|crypto|forex|vix> [--start-date YYYY-MM-DD] [--end-date YYYY-MM-DD]
+
+# 顯示說明
+ai-trader --help
+```
+
+### 設定檔案結構
+
+建立 YAML 設定檔案（例如 `my_strategy.yaml`）：
+
+```yaml
+broker:
+  cash: 1000000
+  commission: 0.001425
+
+data:
+  file: "data/AAPL.csv"  # 單支股票
+  # 或
+  # directory: "./data/tw_stock/"  # 投資組合
+  start_date: "2020-01-01"
+  end_date: "2023-12-31"
+
+strategy:
+  class: "SMAStrategy"
+  params:
+    fast_period: 10
+    slow_period: 30
+
+sizer:
+  type: "percent"  # 或 "fixed"
+  params:
+    percents: 95
+
+analyzers:
+  - sharpe
+  - drawdown
+  - returns
+  - trades
+```
+
+**查看 `config/backtest/` 以取得完整範例。**
+
+## 建立自訂策略
+
+### 方法 1：簡單策略檔案
+
+在 `ai_trader/backtesting/strategies/classic/` 中建立新的 Python 檔案：
+
+```python
+import backtrader as bt
+from ai_trader.backtesting.strategies.base import BaseStrategy
+
+class MyCustomStrategy(BaseStrategy):
+    """我的自訂交易策略。"""
+
+    params = dict(
+        period=20,
+        threshold=0.02,
+    )
+
+    def __init__(self):
+        # 初始化指標
+        self.sma = bt.indicators.SMA(self.data.close, period=self.params.period)
+
+    def next(self):
+        # 交易邏輯
+        if not self.position:
+            # 進場條件
+            if self.data.close[0] > self.sma[0] * (1 + self.params.threshold):
+                self.buy()
+        else:
+            # 出場條件
+            if self.data.close[0] < self.sma[0]:
+                self.close()
+
+# 選擇性：測試策略
+if __name__ == "__main__":
+    from ai_trader.utils.backtest import run_backtest
+
+    results = run_backtest(
+        strategy=MyCustomStrategy,
+        data_source=None,  # 使用範例資料
+        strategy_params={"period": 20, "threshold": 0.02}
+    )
+```
+
+### 方法 2：內聯策略（快速測試）
+
+```python
+import backtrader as bt
+from ai_trader.utils.backtest import create_cerebro, add_stock_data, print_results
+
+class QuickTestStrategy(bt.Strategy):
+    def next(self):
+        if not self.position and self.data.close[0] > self.data.close[-1]:
+            self.buy()
+        elif self.position and self.data.close[0] < self.data.close[-1]:
+            self.sell()
+
+cerebro = create_cerebro(cash=100000)
+add_stock_data(cerebro, source="data/AAPL.csv")
+cerebro.addstrategy(QuickTestStrategy)
+
+initial = cerebro.broker.getvalue()
+results = cerebro.run()
+final = cerebro.broker.getvalue()
+print_results(results, initial, final)
+```
+
+### 策略開發提示
+
+1. **繼承 `BaseStrategy`** 以取得常見功能
+2. **定義參數** 使用 `params = dict(...)`
+3. **在 `__init__()` 中初始化指標**
+4. **在 `next()` 方法中實現邏輯**
+5. **用不同市場條件進行充分測試**
+6. **使用日誌** 而不是 print 陳述式
+7. **新增文件字串** 以解釋策略邏輯
+
+## 專案結構
+
+```
+ai-trader/
+├── ai_trader/                  # 主套件
+│   ├── backtesting/           # 回測元件
+│   │   └── strategies/        # 交易策略
+│   │       ├── classic/       # 單支股票策略 (16)
+│   │       └── portfolio/     # 多支股票策略 (3)
+│   ├── core/                  # 核心工具
+│   │   ├── config.py          # 設定管理
+│   │   ├── exceptions.py      # 自訂例外
+│   │   ├── logging.py         # 日誌設置
+│   │   └── utils.py           # 輔助函式
+│   ├── data/                  # 資料層
+│   │   └── fetchers/          # 資料取得器
+│   │       ├── base.py        # 美股/台股取得器
+│   │       └── crypto.py      # 加密貨幣取得器
+│   ├── utils/                 # 實用函式
+│   │   └── backtest.py        # 回測輔助
+│   ├── cli.py                 # CLI 工具
+│   └── trader.py              # 舊版 AITrader（已棄用）
+├── config/                    # 設定檔案
+│   └── backtest/              # 回測設定
+│       ├── sma_example.yaml
+│       ├── bbands_example.yaml
+│       ├── portfolio_example.yaml
+│       └── crypto_example.yaml
+├── scripts/                   # 輔助腳本
+│   └── examples/              # 範例腳本
+│       ├── 01_simple_backtest.py
+│       ├── 02_step_by_step.py
+│       ├── 03_portfolio_backtest.py
+│       ├── 04_pure_backtrader.py
+│       └── 05_compare_strategies.py
+├── docs/                      # 文件
+│   ├── MIGRATION_GUIDE.md     # 從 v0.1.x 遷移
+│   └── REFACTORING_SUMMARY.md # v0.2.0 變更
+├── tests/                     # 測試套件
+│   ├── unit/                  # 單元測試
+│   └── integration/           # 整合測試
+└── data/                      # 資料目錄（首次使用時建立）
+```
+
+## 文件和資源
+
+- **[策略概述](ai_trader/backtesting/strategies/README.md)** - 從 v0.1.x 升級到 v0.2.0
+- **[範例腳本](scripts/examples/)** - 5 個完整的工作範例
+- **[設定範例](config/backtest/)** - YAML 設定樣板
+
+### 範例腳本
+
+1. **01_simple_backtest.py** - 使用 `run_backtest()` 快速開始
+2. **02_step_by_step.py** - 詳細的逐步範例
+3. **03_portfolio_backtest.py** - 多支股票投資組合策略
+4. **04_pure_backtrader.py** - 純 Backtrader，不使用工具
+5. **05_compare_strategies.py** - 比較多個策略
+
+執行任何範例：
+```bash
+python scripts/examples/01_simple_backtest.py
+```
+
+## 🔧 進階用法
+
+### 比較多個策略
+
+```python
+from ai_trader import run_backtest
+from ai_trader.backtesting.strategies.classic.sma import CrossSMAStrategy
+from ai_trader.backtesting.strategies.classic.rsi import RsiBollingerBandsStrategy
+
+strategies = [
+    (CrossSMAStrategy, {"fast": 10, "slow": 30}),
+    (RsiBollingerBandsStrategy, {"rsi_period": 14, "oversold": 30})
+]
+
+for strategy, params in strategies:
+    print(f"\n測試 {strategy.__name__}...")
+    results = run_backtest(
+        strategy=strategy,
+        strategy_params=params,
+        print_output=True
+    )
+```
+
+### 自訂資料來源
+
+```python
+import pandas as pd
+from ai_trader.utils.backtest import create_cerebro, add_stock_data
+
+# 載入自訂資料
+df = pd.read_csv("my_data.csv", parse_dates=["Date"], index_col=["Date"])
+# 必須包含以下欄位：Open, High, Low, Close, Volume
+
+cerebro = create_cerebro()
+add_stock_data(cerebro, source=df, name="CUSTOM")
+# ... 繼續策略設置
+```
+
+### 投資組合優化
+
+```python
+from ai_trader.utils.backtest import create_cerebro, add_portfolio_data
+from ai_trader.backtesting.strategies.portfolio.roc_rotation import ROCRotationStrategy
+
+cerebro = create_cerebro(cash=2000000)
+add_portfolio_data(cerebro, data_dir="./data/tw_stock/")
+
+# 測試不同參數
+for k in [3, 5, 7]:
+    for days in [20, 30, 40]:
+        cerebro.addstrategy(ROCRotationStrategy, k=k, rebalance_days=days)
+        # ... 執行和分析
+```
+
+## 貢獻
+
+歡迎貢獻！請隨時：
+
+- 回報錯誤和問題
+- 建議新功能或策略
+- 提交拉取請求
+- 改進文件
+- 分享回測結果
+
+## 授權
+
+此專案根據 MIT 授權許可 - 有關詳細資訊，請參閱 LICENSE 檔案。
+
+## 顯示你的支持
+
+如果你發現此專案有幫助，請給它一個星星 ⭐️！你的支持激勵持續開發和改進。
+
+## 聯繫方式
+
+- **作者**: Will Chien
+- **GitHub**: [@whchien](https://github.com/whchien)
+
+## 致謝
+
+- 基於優秀的 [Backtrader](https://www.backtrader.com/) 框架
+- 受到量化交易社群的啟發
+- 感謝所有貢獻者和使用者
+
+---
+
+**v0.1.x 使用者注意：** `AITrader` 類在 v0.2.0 中已棄用。請參閱 [遷移指南](docs/MIGRATION_GUIDE.md) 以取得升級說明。你的現有程式碼將繼續工作，但會發出棄用警告。

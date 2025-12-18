@@ -1,11 +1,15 @@
+import time
 from typing import Optional
 
 import pandas as pd
 import yfinance as yf
+from yfinance.exceptions import YFException
 
 from ai_trader.core import DataFetchError, DataValidationError
+from ai_trader.core.logging import get_logger
 from ai_trader.data.fetchers import BaseFetcher
-from ai_trader.data.fetchers.base import logger
+
+logger = get_logger(__name__)
 
 
 class USStockFetcher(BaseFetcher):
@@ -29,7 +33,14 @@ class USStockFetcher(BaseFetcher):
         >>> print(df.head())
     """
 
-    def __init__(self, symbol: str, start_date: str, end_date: Optional[str] = None):
+    def __init__(
+        self,
+        symbol: str,
+        start_date: str,
+        end_date: Optional[str] = None,
+        max_retries: int = 3,
+        retry_delay: int = 2,
+    ):
         """
         Initialize US stock data fetcher.
 
@@ -37,6 +48,8 @@ class USStockFetcher(BaseFetcher):
             symbol: Stock ticker symbol
             start_date: Start date (YYYY-MM-DD)
             end_date: End date (YYYY-MM-DD), defaults to today
+            max_retries: Maximum number of retry attempts
+            retry_delay: Base delay between retries in seconds
 
         Raises:
             ValueError: If date format is invalid
@@ -44,6 +57,8 @@ class USStockFetcher(BaseFetcher):
         self.symbol = symbol
         self.start_date = start_date
         self.end_date = end_date
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
 
         logger.info(
             f"Initialized USStockFetcher: symbol={symbol}, "
@@ -52,60 +67,92 @@ class USStockFetcher(BaseFetcher):
 
     def fetch(self) -> pd.DataFrame:
         """
-        Fetch US stock data from Yahoo Finance.
+        Fetch US stock data from Yahoo Finance with retry logic.
 
         Returns:
             DataFrame with lowercase columns: ['open', 'high', 'low', 'close', 'volume']
             Index: DatetimeIndex named 'date'
 
         Raises:
-            DataFetchError: If download fails
+            DataFetchError: If download fails after all retries
             DataValidationError: If data is invalid
         """
         logger.info(f"Fetching US stock data for {self.symbol}")
 
-        try:
-            # Download from yfinance
-            df = yf.download(
-                self.symbol,
-                start=self.start_date,
-                end=self.end_date,
-                progress=False,
-                auto_adjust=False,  # Keep both Close and Adj Close
-            )
-
-            if df.empty:
-                raise DataFetchError(
-                    f"No data returned for {self.symbol}", symbol=self.symbol, source="yfinance"
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                # Download from yfinance
+                df = yf.download(
+                    self.symbol,
+                    start=self.start_date,
+                    end=self.end_date,
+                    progress=False,
+                    auto_adjust=False,  # Keep both Close and Adj Close
                 )
 
-            # Reset index to make Date a column
-            df = df.reset_index()
+                if df.empty:
+                    logger.warning(f"No data returned for {self.symbol} (attempt {attempt}/{self.max_retries})")
+                    if attempt == self.max_retries:
+                        raise DataFetchError(
+                            f"No data returned for {self.symbol}", symbol=self.symbol, source="yfinance"
+                        )
+                    continue
 
-            # Normalize columns (yfinance returns: Date, Open, High, Low, Close, Adj Close, Volume)
-            # We want: date (index), open, high, low, close, volume, adj_close
-            df = self._normalize_columns(df)
+                # Reset index to make Date a column
+                df = df.reset_index()
 
-            # Validate required columns exist
-            self._validate_dataframe(df, self.symbol)
+                # Normalize columns (yfinance returns: Date, Open, High, Low, Close, Adj Close, Volume)
+                # We want: date (index), open, high, low, close, volume, adj_close
+                df = self._normalize_columns(df)
 
-            logger.info(
-                f"Successfully fetched {len(df)} rows for {self.symbol} "
-                f"from {df.index[0]} to {df.index[-1]}"
-            )
+                # Validate required columns exist
+                self._validate_dataframe(df, self.symbol)
 
-            return df
+                logger.info(
+                    f"Successfully fetched {len(df)} rows for {self.symbol} "
+                    f"from {df.index[0]} to {df.index[-1]} (attempt {attempt}/{self.max_retries})"
+                )
 
-        except (ConnectionError, TimeoutError) as e:
-            raise DataFetchError(
-                f"Network error fetching {self.symbol}: {e}", symbol=self.symbol, source="yfinance"
-            ) from e
-        except Exception as e:
-            if isinstance(e, (DataFetchError, DataValidationError)):
-                raise
-            raise DataFetchError(
-                f"Failed to fetch {self.symbol}: {e}", symbol=self.symbol, source="yfinance"
-            ) from e
+                return df
+
+            except YFException as e:
+                logger.warning(
+                    f"Yahoo Finance error for {self.symbol} (attempt {attempt}/{self.max_retries}): {e}"
+                )
+                if attempt == self.max_retries:
+                    raise DataFetchError(
+                        f"Failed to fetch {self.symbol} after {self.max_retries} attempts: {e}",
+                        symbol=self.symbol,
+                        source="yfinance",
+                    ) from e
+
+            except (ConnectionError, TimeoutError) as e:
+                logger.warning(
+                    f"Network error for {self.symbol} (attempt {attempt}/{self.max_retries}): {e}"
+                )
+                if attempt == self.max_retries:
+                    raise DataFetchError(
+                        f"Network error fetching {self.symbol}: {e}",
+                        symbol=self.symbol,
+                        source="yfinance",
+                    ) from e
+
+            except Exception as e:
+                if isinstance(e, (DataFetchError, DataValidationError)):
+                    raise
+                logger.warning(
+                    f"Unexpected error for {self.symbol} (attempt {attempt}/{self.max_retries}): {e}"
+                )
+                if attempt == self.max_retries:
+                    raise DataFetchError(
+                        f"Failed to fetch {self.symbol}: {e}", symbol=self.symbol, source="yfinance"
+                    ) from e
+
+            # Wait before retrying (exponential backoff)
+            if attempt < self.max_retries:
+                delay = self.retry_delay * (2 ** (attempt - 1))
+                logger.debug(f"Retrying {self.symbol} in {delay} seconds...")
+                time.sleep(delay)
 
     def fetch_batch(self, symbols: list[str]) -> tuple[dict[str, pd.DataFrame], list[str]]:
         """

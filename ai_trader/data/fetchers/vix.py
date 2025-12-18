@@ -4,8 +4,10 @@ import pandas as pd
 import yfinance as yf
 
 from ai_trader.core import DataFetchError, DataValidationError
+from ai_trader.core.logging import get_logger
 from ai_trader.data.fetchers import BaseFetcher
-from ai_trader.data.fetchers.base import logger
+
+logger = get_logger(__name__)
 
 
 class VIXDataFetcher(BaseFetcher):

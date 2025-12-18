@@ -2,11 +2,12 @@
 File management for market data CSV operations.
 """
 
-import logging
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+
+from ai_trader.core.logging import get_logger
 
 
 class FileManager:
@@ -22,7 +23,7 @@ class FileManager:
             base_data_dir: Base directory for storing data files
         """
         self.base_data_dir = Path(base_data_dir)
-        self.logger = logging.getLogger("astro-trader.file_manager")
+        self.logger = get_logger(__name__)
         self.ensure_directory_exists(self.base_data_dir)
 
     def ensure_directory_exists(self, path: Path):

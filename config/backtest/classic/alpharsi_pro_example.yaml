@@ -1,0 +1,47 @@
+# Example configuration for AlphaRSI Pro strategy backtest
+# AlphaRSI Pro uses fixed RSI with adaptive volatility-based levels and trend confirmation
+
+broker:
+  cash: 1000000
+  commission: 0.001425
+
+data:
+  file: "data/us_stock/tsm.csv"
+  start_date: "2020-01-01"
+  end_date: "2025-12-01"
+  date_col: "date"
+
+strategy:
+  class: "AlphaRSIProStrategy"
+  params:
+    # RSI parameters
+    rsi_period: 14                # Base RSI calculation period
+    smoothing_period: 5           # Period for smoothing RSI
+    smoothing_type: "SMA"         # Smoothing type: SMA or WMA
+
+    # Volatility parameters
+    atr_period: 14                # ATR period for volatility measurement
+    atr_ma_period: 50             # Long-term ATR average period
+
+    # Trend parameters
+    trend_sma_period: 50          # SMA period for trend bias detection
+
+    # Adaptive level parameters
+    sensitivity: 20               # Volatility sensitivity (higher = more adjustment)
+    ob_base: 70                   # Base overbought level
+    os_base: 30                   # Base oversold level
+    ob_min: 65                    # Minimum overbought bound
+    ob_max: 85                    # Maximum overbought bound
+    os_min: 15                    # Minimum oversold bound
+    os_max: 35                    # Maximum oversold bound
+
+sizer:
+  type: "percent"
+  params:
+    percents: 95
+
+analyzers:
+  - sharpe
+  - drawdown
+  - returns
+  - trades

@@ -1,0 +1,44 @@
+# Example configuration for Adaptive RSI (ARSI) strategy backtest
+# Adaptive RSI uses dynamic RSI period based on market volatility and cycles
+
+broker:
+  cash: 1000000
+  commission: 0.001425
+
+data:
+  file: "data/us_stock/tsm.csv"
+  start_date: "2020-01-01"
+  end_date: "2025-12-01"
+  date_col: "date"
+
+strategy:
+  class: "AdaptiveRSIStrategy"
+  params:
+    # Base RSI parameters
+    rsi_length: 14                # Base RSI length for initialization
+
+    # Adaptive period parameters
+    atr_length: 14                # ATR period for volatility measurement
+    min_period: 8                 # Minimum adaptive RSI period
+    max_period: 28                # Maximum adaptive RSI period
+    adaptive_sensitivity: 1.0     # Sensitivity multiplier for period adaptation
+
+    # Smoothing parameters
+    smoothing_length: 3           # EMA smoothing length for final RSI
+
+    # Signal level parameters
+    ob_level: 70                  # Overbought level (fixed)
+    os_level: 30                  # Oversold level (fixed)
+    extreme_ob_level: 80          # Extreme overbought level for reversal signals
+    extreme_os_level: 20          # Extreme oversold level for reversal signals
+
+sizer:
+  type: "percent"
+  params:
+    percents: 95
+
+analyzers:
+  - sharpe
+  - drawdown
+  - returns
+  - trades
