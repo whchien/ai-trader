@@ -291,44 +291,102 @@ print_results(results, initial, final)
 
 ```
 ai-trader/
-├── ai_trader/                  # 主套件
-│   ├── backtesting/           # 回測元件
-│   │   └── strategies/        # 交易策略
-│   │       ├── classic/       # 單支股票策略 (16)
-│   │       └── portfolio/     # 多支股票策略 (3)
-│   ├── core/                  # 核心工具
-│   │   ├── config.py          # 設定管理
-│   │   ├── exceptions.py      # 自訂例外
-│   │   ├── logging.py         # 日誌設置
-│   │   └── utils.py           # 輔助函式
-│   ├── data/                  # 資料層
-│   │   └── fetchers/          # 資料取得器
-│   │       ├── base.py        # 美股/台股取得器
-│   │       └── crypto.py      # 加密貨幣取得器
-│   ├── utils/                 # 實用函式
-│   │   └── backtest.py        # 回測輔助
-│   ├── cli.py                 # CLI 工具
-│   └── trader.py              # 舊版 AITrader（已棄用）
-├── config/                    # 設定檔案
-│   └── backtest/              # 回測設定
-│       ├── sma_example.yaml
-│       ├── bbands_example.yaml
-│       ├── portfolio_example.yaml
-│       └── crypto_example.yaml
-├── scripts/                   # 輔助腳本
-│   └── examples/              # 範例腳本
+├── ai_trader/                      # 主套件
+│   ├── backtesting/               # 回測元件
+│   │   ├── feeds/                 # 資料饋送處理器
+│   │   └── strategies/            # 交易策略
+│   │       ├── base.py            # 基礎策略類
+│   │       ├── indicators.py      # 自訂指標
+│   │       ├── classic/           # 單支股票策略 (15)
+│   │       │   ├── sma.py
+│   │       │   ├── bbands.py
+│   │       │   ├── rsi.py
+│   │       │   ├── macd.py
+│   │       │   ├── momentum.py
+│   │       │   ├── buyhold.py
+│   │       │   ├── turtle.py
+│   │       │   ├── vcp.py
+│   │       │   ├── roc.py
+│   │       │   ├── double_top.py
+│   │       │   ├── rsrs.py
+│   │       │   ├── risk_averse.py
+│   │       │   ├── adaptive_rsi.py
+│   │       │   ├── alpharsi_pro.py
+│   │       │   └── hybrid_alpharsi.py
+│   │       └── portfolio/         # 多支股票策略 (4)
+│   │           ├── roc_rotation.py
+│   │           ├── rsrs_rotation.py
+│   │           ├── multi_bbands.py
+│   │           └── triple_rsi.py
+│   ├── core/                      # 核心工具
+│   │   ├── config.py              # 設定管理
+│   │   ├── exceptions.py          # 自訂例外
+│   │   ├── logging.py             # 日誌設置
+│   │   └── utils.py               # 輔助函式
+│   ├── data/                      # 資料層
+│   │   ├── fetchers/              # 資料取得器
+│   │   │   ├── base.py            # 基礎取得器
+│   │   │   ├── us_stock.py        # 美股資料
+│   │   │   ├── tw_stock.py        # 台股資料
+│   │   │   ├── crypto.py          # 加密貨幣資料
+│   │   │   ├── forex.py           # 外匯資料
+│   │   │   └── vix.py             # VIX 資料
+│   │   └── storage/               # 資料儲存
+│   │       └── base.py            # 儲存處理器
+│   ├── mcp/                       # Model Context Protocol 伺服器
+│   │   ├── server.py              # MCP 伺服器實現
+│   │   ├── models.py              # MCP 資料模型
+│   │   ├── __main__.py            # MCP 進入點
+│   │   └── tools/                 # MCP 工具
+│   │       ├── backtest.py        # 回測工具
+│   │       ├── data.py            # 資料工具
+│   │       └── strategies.py      # 策略工具
+│   ├── utils/                     # 實用函式
+│   │   ├── backtest.py            # 回測輔助
+│   │   └── __init__.py
+│   ├── __init__.py                # 套件初始化
+│   └── cli.py                     # CLI 工具
+├── config/                        # 設定檔案
+│   └── backtest/                  # 回測設定
+│       ├── classic/               # 經典策略設定
+│       │   └── *.yaml
+│       └── portfolio/             # 投資組合策略設定
+│           └── *.yaml
+├── scripts/                       # 輔助腳本
+│   └── examples/                  # 範例腳本
 │       ├── 01_simple_backtest.py
 │       ├── 02_step_by_step.py
 │       ├── 03_portfolio_backtest.py
 │       ├── 04_pure_backtrader.py
 │       └── 05_compare_strategies.py
-├── docs/                      # 文件
-│   ├── MIGRATION_GUIDE.md     # 從 v0.1.x 遷移
-│   └── REFACTORING_SUMMARY.md # v0.2.0 變更
-├── tests/                     # 測試套件
-│   ├── unit/                  # 單元測試
-│   └── integration/           # 整合測試
-└── data/                      # 資料目錄（首次使用時建立）
+├── tests/                         # 測試套件
+│   ├── unit/                      # 單元測試
+│   │   ├── backtesting/
+│   │   ├── cli/
+│   │   ├── core/
+│   │   ├── data/
+│   │   ├── mcp/
+│   │   ├── utils/
+│   │   └── conftest.py
+│   ├── integration/               # 整合測試
+│   │   ├── test_backtest_workflow.py
+│   │   └── test_data_pipeline.py
+│   └── conftest.py
+├── docs/                          # 文件
+│   ├── MIGRATION_GUIDE.md         # 從 v0.1.x 遷移
+│   └── REFACTORING_SUMMARY.md     # v0.2.0 變更
+├── agentic_ai_trader/             # 代理型交易模組
+│   ├── data-science/
+│   ├── financial-advisor/
+│   └── trading-backtester/
+├── data/                          # 資料目錄
+│   ├── us_stock/                  # 美股資料
+│   ├── tw_stock/                  # 台股資料
+│   ├── crypto/                    # 加密貨幣資料
+│   └── forex/                     # 外匯資料
+├── pyproject.toml                 # Poetry 設定
+├── requirements.txt               # Pip 需求
+└── README_zh.md                   # 本檔案
 ```
 
 ## 文件和資源

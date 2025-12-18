@@ -291,44 +291,102 @@ print_results(results, initial, final)
 
 ```
 ai-trader/
-├── ai_trader/                  # Main package
-│   ├── backtesting/           # Backtesting components
-│   │   └── strategies/        # Trading strategies
-│   │       ├── classic/       # Single-stock strategies (16)
-│   │       └── portfolio/     # Multi-stock strategies (3)
-│   ├── core/                  # Core utilities
-│   │   ├── config.py          # Configuration management
-│   │   ├── exceptions.py      # Custom exceptions
-│   │   ├── logging.py         # Logging setup
-│   │   └── utils.py           # Helper functions
-│   ├── data/                  # Data layer
-│   │   └── fetchers/          # Data fetchers
-│   │       ├── base.py        # US/TW stock fetcher
-│   │       └── crypto.py      # Crypto fetcher
-│   ├── utils/                 # Utility functions
-│   │   └── backtest.py        # Backtest helpers
-│   ├── cli.py                 # CLI tool
-│   └── trader.py              # Legacy AITrader (deprecated)
-├── config/                    # Configuration files
-│   └── backtest/              # Backtest configs
-│       ├── sma_example.yaml
-│       ├── bbands_example.yaml
-│       ├── portfolio_example.yaml
-│       └── crypto_example.yaml
-├── scripts/                   # Helper scripts
-│   └── examples/              # Example scripts
+├── ai_trader/                      # Main package
+│   ├── backtesting/               # Backtesting components
+│   │   ├── feeds/                 # Data feed handlers
+│   │   └── strategies/            # Trading strategies
+│   │       ├── base.py            # Base strategy class
+│   │       ├── indicators.py      # Custom indicators
+│   │       ├── classic/           # Single-stock strategies (15)
+│   │       │   ├── sma.py
+│   │       │   ├── bbands.py
+│   │       │   ├── rsi.py
+│   │       │   ├── macd.py
+│   │       │   ├── momentum.py
+│   │       │   ├── buyhold.py
+│   │       │   ├── turtle.py
+│   │       │   ├── vcp.py
+│   │       │   ├── roc.py
+│   │       │   ├── double_top.py
+│   │       │   ├── rsrs.py
+│   │       │   ├── risk_averse.py
+│   │       │   ├── adaptive_rsi.py
+│   │       │   ├── alpharsi_pro.py
+│   │       │   └── hybrid_alpharsi.py
+│   │       └── portfolio/         # Multi-stock strategies (4)
+│   │           ├── roc_rotation.py
+│   │           ├── rsrs_rotation.py
+│   │           ├── multi_bbands.py
+│   │           └── triple_rsi.py
+│   ├── core/                      # Core utilities
+│   │   ├── config.py              # Configuration management
+│   │   ├── exceptions.py          # Custom exceptions
+│   │   ├── logging.py             # Logging setup
+│   │   └── utils.py               # Helper functions
+│   ├── data/                      # Data layer
+│   │   ├── fetchers/              # Data fetchers
+│   │   │   ├── base.py            # Base fetcher
+│   │   │   ├── us_stock.py        # US stock data
+│   │   │   ├── tw_stock.py        # Taiwan stock data
+│   │   │   ├── crypto.py          # Cryptocurrency data
+│   │   │   ├── forex.py           # Forex data
+│   │   │   └── vix.py             # VIX data
+│   │   └── storage/               # Data storage
+│   │       └── base.py            # Storage handlers
+│   ├── mcp/                       # Model Context Protocol server
+│   │   ├── server.py              # MCP server implementation
+│   │   ├── models.py              # MCP data models
+│   │   ├── __main__.py            # MCP entry point
+│   │   └── tools/                 # MCP tools
+│   │       ├── backtest.py        # Backtest tools
+│   │       ├── data.py            # Data tools
+│   │       └── strategies.py      # Strategy tools
+│   ├── utils/                     # Utility functions
+│   │   ├── backtest.py            # Backtest helpers
+│   │   └── __init__.py
+│   ├── __init__.py                # Package initialization
+│   └── cli.py                     # CLI tool
+├── config/                        # Configuration files
+│   └── backtest/                  # Backtest configurations
+│       ├── classic/               # Classic strategy configs
+│       │   └── *.yaml
+│       └── portfolio/             # Portfolio strategy configs
+│           └── *.yaml
+├── scripts/                       # Helper scripts
+│   └── examples/                  # Example scripts
 │       ├── 01_simple_backtest.py
 │       ├── 02_step_by_step.py
 │       ├── 03_portfolio_backtest.py
 │       ├── 04_pure_backtrader.py
 │       └── 05_compare_strategies.py
-├── docs/                      # Documentation
-│   ├── MIGRATION_GUIDE.md     # Migration from v0.1.x
-│   └── REFACTORING_SUMMARY.md # v0.2.0 changes
-├── tests/                     # Test suite
-│   ├── unit/                  # Unit tests
-│   └── integration/           # Integration tests
-└── data/                      # Data directory (created on first use)
+├── tests/                         # Test suite
+│   ├── unit/                      # Unit tests
+│   │   ├── backtesting/
+│   │   ├── cli/
+│   │   ├── core/
+│   │   ├── data/
+│   │   ├── mcp/
+│   │   ├── utils/
+│   │   └── conftest.py
+│   ├── integration/               # Integration tests
+│   │   ├── test_backtest_workflow.py
+│   │   └── test_data_pipeline.py
+│   └── conftest.py
+├── docs/                          # Documentation
+│   ├── MIGRATION_GUIDE.md         # Migration from v0.1.x
+│   └── REFACTORING_SUMMARY.md     # v0.2.0 changes
+├── agentic_ai_trader/             # Agent-based trading modules
+│   ├── data-science/
+│   ├── financial-advisor/
+│   └── trading-backtester/
+├── data/                          # Data directory
+│   ├── us_stock/                  # US stock data
+│   ├── tw_stock/                  # Taiwan stock data
+│   ├── crypto/                    # Cryptocurrency data
+│   └── forex/                     # Forex data
+├── pyproject.toml                 # Poetry configuration
+├── requirements.txt               # Pip requirements
+└── README.md                      # This file
 ```
 
 ## Documentation & Resources
