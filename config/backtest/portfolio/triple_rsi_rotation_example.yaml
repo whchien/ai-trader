@@ -35,3 +35,6 @@ analyzers:
   - returns
   - trades
   - sqn
+
+plot:
+  true

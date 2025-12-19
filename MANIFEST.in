@@ -1,0 +1,9 @@
+include README.md
+include README_zh.md
+include LICENSE
+include requirements.txt
+recursive-include ai_trader *.yml *.yaml *.json
+recursive-include config *
+recursive-include data *
+recursive-include scripts *
+recursive-include docs *

@@ -8,6 +8,9 @@ _data/
 # C extensions
 *.so
 
+dist/
+
+.data/
 .claude/
 
 # Distribution / packaging
