@@ -1,13 +1,13 @@
 # AI-Trader
 
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
 
 [English Version (英文版)](README.md)
 
 一個專業、設定檔驅動的演算法交易回測框架，建立在 Backtrader 之上。無縫在股票、加密貨幣和外匯市場中測試、優化並整合交易策略與大型語言模型 (LLM)。
 
-![Demo GIF](data/demo_bt.gif)
+![Demo GIF](data/demo.gif)
 
 ## 主要功能
 
@@ -22,6 +22,12 @@
 
 **1. 安裝**
 
+**選項 A：從 PyPI 安裝（推薦）**
+```bash
+pip install ai-trader
+```
+
+**選項 B：從原始程式碼安裝**
 ```bash
 git clone https://github.com/whchien/ai-trader.git
 cd ai-trader
@@ -163,4 +169,4 @@ class MyCustomStrategy(BaseStrategy):
 
 ## 授權
 
-本專案採用 MIT 授權。詳情請參見 [LICENSE](LICENSE) 檔案。
+本專案採用 GNU 通用公共授權第 3 版 (GPL-3.0)。詳情請參見 [LICENSE](LICENSE) 檔案。

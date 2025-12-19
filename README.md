@@ -1,13 +1,13 @@
 # AI-Trader
 
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
 
 [中文版說明 (Chinese Subpage)](README_zh.md)
 
 A professional, config-driven backtesting framework for algorithmic trading, built on Backtrader. Seamlessly test, optimize, and integrate trading strategies with Large Language Models (LLMs) across stocks, crypto, and forex markets.
 
-![Demo GIF](data/demo_bt.gif)
+![Demo GIF](data/demo.gif)
 
 ## Key Features
 
@@ -22,6 +22,12 @@ A professional, config-driven backtesting framework for algorithmic trading, bui
 
 **1. Installation**
 
+**Option A: Install from PyPI (Recommended)**
+```bash
+pip install ai-trader
+```
+
+**Option B: Install from Source**
 ```bash
 git clone https://github.com/whchien/ai-trader.git
 cd ai-trader
@@ -163,5 +169,5 @@ If you find this project helpful, please give it a star !
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3 (GPL-3.0). See the [LICENSE](LICENSE) file for details.
  

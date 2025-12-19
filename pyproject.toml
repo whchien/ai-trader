@@ -4,21 +4,21 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-trader"
-version = "0.3.0"
-description = "Professional algorithmic trading backtesting framework using Backtrader"
+version = "0.3.1"
+description = "Backtrader-powered backtesting framework for algorithmic trading, featuring 20+ strategies, multi-market support, CLI tools, and an integrated MCP server for professional traders."
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
-license = {text = "MIT"}
+license = {text = "GPL-3.0"}
 authors = [
-    {name = "Will Chien"}
+    {name = "Will Chien", email="locriginal@gmail.com"}
 ]
-keywords = ["trading", "backtesting", "algorithmic-trading", "finance", "backtrader", "technical-analysis"]
+keywords = ["backtesting", "algorithmic-trading", "finance", "backtrader", "technical-analysis", "mcp", "cli", "quantitative-finance"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "Intended Audience :: Financial Industry",
+    "Intended Audience :: Financial and Insurance Industry",
     "Topic :: Office/Business :: Financial :: Investment",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

@@ -41,7 +41,7 @@ class MultiBBandsRotationStrategy(BaseStrategy):
         if len(new_hold) > k:
             data_roc = {}
             for item in new_hold:
-                data_roc[item] = self.inds[item][0]
+                data_roc[item] = self.inds[item]["buy"][0]
             # 排序
             new_hold = sorted(data_roc.items(), key=lambda x: x[1], reverse=True)
             new_hold = new_hold[:k]
