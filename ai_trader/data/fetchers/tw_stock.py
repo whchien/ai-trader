@@ -15,6 +15,7 @@ logger = get_logger(__name__)
 # Disable SSL warnings when we bypass verification
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
+
 # Monkey-patch twstock to handle the new 10-field format from Taiwan Stock Exchange API
 # The API now returns an additional "notes" field (註記) making it 10 fields instead of 9
 # This patch updates the DATATUPLE and related fetcher classes to handle this new format
@@ -27,10 +28,11 @@ def _patch_twstock_for_new_api():
     - New: date, capacity, turnover, open, high, low, close, change, transaction, notes (10 fields)
     """
     import datetime
+
     import twstock.stock
 
     # Update the DATATUPLE to include the new 'notes' field
-    if not hasattr(twstock.stock, '_patched_datatuple'):
+    if not hasattr(twstock.stock, "_patched_datatuple"):
         # Create new DATATUPLE with the notes field
         twstock.stock.DATATUPLE = namedtuple(
             "Data",
@@ -94,7 +96,7 @@ def _patch_twstock_for_new_api():
         twstock.stock.TWSEFetcher._make_datatuple = patched_tws_make_datatuple
 
         # Also patch TPEXFetcher if it exists (for OTC stocks)
-        if hasattr(twstock.stock, 'TPEXFetcher'):
+        if hasattr(twstock.stock, "TPEXFetcher"):
 
             def patched_tpex_make_datatuple(self, data):
                 """Convert raw API data to DATATUPLE for TPEX (OTC market)."""
@@ -135,7 +137,10 @@ def _patch_twstock_for_new_api():
             twstock.stock.TPEXFetcher._make_datatuple = patched_tpex_make_datatuple
 
         twstock.stock._patched_datatuple = True
-        logger.debug("Successfully patched twstock library for new API format (10 fields with notes)")
+        logger.debug(
+            "Successfully patched twstock library for new API format (10 fields with notes)"
+        )
+
 
 # Apply the patch when this module is imported
 _patch_twstock_for_new_api()
@@ -245,10 +250,14 @@ class TWStockFetcher(BaseFetcher):
                     requests.get = original_get
 
                 if not stock.data:
-                    logger.warning(f"No data returned for {self.symbol} (attempt {attempt}/{self.max_retries})")
+                    logger.warning(
+                        f"No data returned for {self.symbol} (attempt {attempt}/{self.max_retries})"
+                    )
                     if attempt == self.max_retries:
                         raise DataFetchError(
-                            f"No data returned for {self.symbol}", symbol=self.symbol, source="twstock"
+                            f"No data returned for {self.symbol}",
+                            symbol=self.symbol,
+                            source="twstock",
                         )
                     continue
 

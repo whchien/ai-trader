@@ -15,7 +15,7 @@ from ai_trader.data.fetchers import (
     VIXDataFetcher,
 )
 from ai_trader.data.storage import FileManager
-from ai_trader.mcp.models import FetchDataRequest, FetchResult, FetchedSymbol
+from ai_trader.mcp.models import FetchDataRequest, FetchedSymbol, FetchResult
 
 logger = get_logger(__name__)
 
@@ -31,9 +31,7 @@ async def fetch_data_tool(
     Can fetch multiple symbols in batch mode.
     """
     try:
-        await ctx.info(
-            f"Fetching {len(request.symbols)} symbol(s) from {request.market} market"
-        )
+        await ctx.info(f"Fetching {len(request.symbols)} symbol(s) from {request.market} market")
 
         # Factory mapping for fetcher classes
         fetcher_factory = {

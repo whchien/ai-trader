@@ -227,7 +227,9 @@ class DoubleTop(bt.Indicator):
             highest_past = max([p for p in self.data.close.get(ago=25, size=25)])
             cond_4 = highest_past < self.data.close[0]
         except ValueError as e:
-            logger.debug(f"DoubleTop condition 4 calculation failed (insufficient data), defaulting to True: {e}")
+            logger.debug(
+                f"DoubleTop condition 4 calculation failed (insufficient data), defaulting to True: {e}"
+            )
             cond_4 = True
 
         # Condition 5: Close price is greater than the close price 120 days ago
@@ -495,9 +497,7 @@ class AdaptiveRSI(bt.Indicator):
             adaptive_period_float = self.p.max_period - (
                 market_factor * period_range * self.p.adaptive_sensitivity / 10.0
             )
-            adaptive_period = max(
-                self.p.min_period, min(self.p.max_period, adaptive_period_float)
-            )
+            adaptive_period = max(self.p.min_period, min(self.p.max_period, adaptive_period_float))
             self.lines.adaptive_period[0] = adaptive_period
 
             # Calculate RSI with adaptive period
@@ -588,12 +588,8 @@ class HybridAlphaRSI(bt.Indicator):
     def __init__(self):
         # Calculate ATR for both volatility ratio and adaptive period
         self.atr = bt.indicators.ATR(period=self.p.atr_length)
-        self.atr_sma_short = bt.indicators.MovingAverageSimple(
-            self.atr, period=self.p.atr_length
-        )
-        self.atr_sma_long = bt.indicators.MovingAverageSimple(
-            self.atr, period=self.p.atr_ma_period
-        )
+        self.atr_sma_short = bt.indicators.MovingAverageSimple(self.atr, period=self.p.atr_length)
+        self.atr_sma_long = bt.indicators.MovingAverageSimple(self.atr, period=self.p.atr_ma_period)
 
         # Calculate trend bias using SMA
         self.trend_sma = bt.indicators.MovingAverageSimple(
@@ -673,9 +669,7 @@ class HybridAlphaRSI(bt.Indicator):
             adaptive_period_float = self.p.max_period - (
                 market_factor * period_range * self.p.adaptive_sensitivity / 10.0
             )
-            adaptive_period = max(
-                self.p.min_period, min(self.p.max_period, adaptive_period_float)
-            )
+            adaptive_period = max(self.p.min_period, min(self.p.max_period, adaptive_period_float))
             self.lines.adaptive_period[0] = adaptive_period
 
             # === Part 4: Calculate adaptive levels ===

@@ -1,4 +1,5 @@
 """Classic trading strategies for single stocks."""
+
 from ai_trader.backtesting.strategies.classic.adaptive_rsi import AdaptiveRSIStrategy
 from ai_trader.backtesting.strategies.classic.alpharsi_pro import AlphaRSIProStrategy
 from ai_trader.backtesting.strategies.classic.bbands import BBandsStrategy
@@ -41,5 +42,5 @@ __all__ = [
     "VCPStrategy",
     "AlphaRSIProStrategy",
     "AdaptiveRSIStrategy",
-    "HybridAlphaRSIStrategy"
+    "HybridAlphaRSIStrategy",
 ]
