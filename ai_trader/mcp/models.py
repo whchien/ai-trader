@@ -1,9 +1,8 @@
 """Pydantic models for MCP server requests and responses."""
 
-from typing import Literal, Optional, List
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
-
 
 # ==================== Request Models ====================
 
@@ -36,7 +35,9 @@ class FetchDataRequest(BaseModel):
         "us_stock", description="Market type"
     )
     start_date: str = Field(..., description="Start date in YYYY-MM-DD format")
-    end_date: Optional[str] = Field(None, description="End date in YYYY-MM-DD format (defaults to today)")
+    end_date: Optional[str] = Field(
+        None, description="End date in YYYY-MM-DD format (defaults to today)"
+    )
     output_dir: str = Field("./data", description="Output directory for saved CSV files")
 
 

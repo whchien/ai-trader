@@ -1,5 +1,6 @@
 import time
 import warnings
+from collections import namedtuple
 from typing import Optional
 
 import pandas as pd
@@ -13,6 +14,136 @@ logger = get_logger(__name__)
 
 # Disable SSL warnings when we bypass verification
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
+
+
+# Monkey-patch twstock to handle the new 10-field format from Taiwan Stock Exchange API
+# The API now returns an additional "notes" field (註記) making it 10 fields instead of 9
+# This patch updates the DATATUPLE and related fetcher classes to handle this new format
+def _patch_twstock_for_new_api():
+    """
+    Patch twstock library to support the new Taiwan Stock Exchange API format.
+
+    The TWSE API now returns 10 fields instead of 9:
+    - Old: date, capacity, turnover, open, high, low, close, change, transaction (9 fields)
+    - New: date, capacity, turnover, open, high, low, close, change, transaction, notes (10 fields)
+    """
+    import datetime
+
+    import twstock.stock
+
+    # Update the DATATUPLE to include the new 'notes' field
+    if not hasattr(twstock.stock, "_patched_datatuple"):
+        # Create new DATATUPLE with the notes field
+        twstock.stock.DATATUPLE = namedtuple(
+            "Data",
+            [
+                "date",
+                "capacity",
+                "turnover",
+                "open",
+                "high",
+                "low",
+                "close",
+                "change",
+                "transaction",
+                "notes",  # New field from API
+            ],
+        )
+
+        # Patch TWSEFetcher._make_datatuple to completely replace the method
+        def patched_tws_make_datatuple(self, data):
+            """
+            Convert raw API data to DATATUPLE, handling the new 10-field format.
+            """
+            # Extract the notes field if present (index 9)
+            notes = data[9] if len(data) > 9 else ""
+
+            # Process the first 9 fields as the original method did
+            data = data[:9]
+
+            # Convert date format: '114/01/02' -> '2025/01/02'
+            data[0] = datetime.datetime.strptime(self._convert_date(data[0]), "%Y/%m/%d")
+            # Convert capacity to int (remove commas)
+            data[1] = int(data[1].replace(",", ""))
+            # Convert turnover to int (remove commas)
+            data[2] = int(data[2].replace(",", ""))
+            # Convert prices (handle "--" for missing data)
+            data[3] = None if data[3] == "--" else float(data[3].replace(",", ""))
+            data[4] = None if data[4] == "--" else float(data[4].replace(",", ""))
+            data[5] = None if data[5] == "--" else float(data[5].replace(",", ""))
+            data[6] = None if data[6] == "--" else float(data[6].replace(",", ""))
+            # Convert change (handle X marking as 0)
+            data[7] = float(
+                0.0 if data[7].replace(",", "") == "X0.00" else data[7].replace(",", "")
+            )
+            # Convert transaction count to int (remove commas)
+            data[8] = int(data[8].replace(",", ""))
+
+            # Return new DATATUPLE with the notes field
+            return twstock.stock.DATATUPLE(
+                data[0],
+                data[1],
+                data[2],
+                data[3],
+                data[4],
+                data[5],
+                data[6],
+                data[7],
+                data[8],
+                notes,
+            )
+
+        twstock.stock.TWSEFetcher._make_datatuple = patched_tws_make_datatuple
+
+        # Also patch TPEXFetcher if it exists (for OTC stocks)
+        if hasattr(twstock.stock, "TPEXFetcher"):
+
+            def patched_tpex_make_datatuple(self, data):
+                """Convert raw API data to DATATUPLE for TPEX (OTC market)."""
+                # Extract notes field if present
+                notes = data[9] if len(data) > 9 else ""
+                data = data[:9]
+
+                # Convert date format, removing special markers like ＊
+                data[0] = datetime.datetime.strptime(
+                    self._convert_date(data[0].replace("＊", "")), "%Y/%m/%d"
+                )
+                # TPEX uses units of 1000 for capacity and turnover
+                data[1] = int(data[1].replace(",", "")) * 1000
+                data[2] = int(data[2].replace(",", "")) * 1000
+                # Convert prices
+                data[3] = None if data[3] == "--" else float(data[3].replace(",", ""))
+                data[4] = None if data[4] == "--" else float(data[4].replace(",", ""))
+                data[5] = None if data[5] == "--" else float(data[5].replace(",", ""))
+                data[6] = None if data[6] == "--" else float(data[6].replace(",", ""))
+                # Convert change
+                data[7] = float(data[7].replace(",", ""))
+                # Convert transaction count
+                data[8] = int(data[8].replace(",", ""))
+
+                return twstock.stock.DATATUPLE(
+                    data[0],
+                    data[1],
+                    data[2],
+                    data[3],
+                    data[4],
+                    data[5],
+                    data[6],
+                    data[7],
+                    data[8],
+                    notes,
+                )
+
+            twstock.stock.TPEXFetcher._make_datatuple = patched_tpex_make_datatuple
+
+        twstock.stock._patched_datatuple = True
+        logger.debug(
+            "Successfully patched twstock library for new API format (10 fields with notes)"
+        )
+
+
+# Apply the patch when this module is imported
+_patch_twstock_for_new_api()
 
 
 class TWStockFetcher(BaseFetcher):
@@ -119,10 +250,14 @@ class TWStockFetcher(BaseFetcher):
                     requests.get = original_get
 
                 if not stock.data:
-                    logger.warning(f"No data returned for {self.symbol} (attempt {attempt}/{self.max_retries})")
+                    logger.warning(
+                        f"No data returned for {self.symbol} (attempt {attempt}/{self.max_retries})"
+                    )
                     if attempt == self.max_retries:
                         raise DataFetchError(
-                            f"No data returned for {self.symbol}", symbol=self.symbol, source="twstock"
+                            f"No data returned for {self.symbol}",
+                            symbol=self.symbol,
+                            source="twstock",
                         )
                     continue
 

@@ -46,9 +46,7 @@ async def quick_backtest(
 
 
 @mcp.tool
-async def fetch_market_data(
-    request: models.FetchDataRequest, ctx: Context
-) -> models.FetchResult:
+async def fetch_market_data(request: models.FetchDataRequest, ctx: Context) -> models.FetchResult:
     """
     Fetch market data and save to CSV files.
 

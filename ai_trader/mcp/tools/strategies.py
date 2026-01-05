@@ -3,7 +3,7 @@
 from ai_trader.backtesting.strategies import classic, portfolio
 from ai_trader.cli import _get_strategies_from_module
 from ai_trader.core.logging import get_logger
-from ai_trader.mcp.models import ListStrategiesRequest, StrategyInfo, StrategiesResult
+from ai_trader.mcp.models import ListStrategiesRequest, StrategiesResult, StrategyInfo
 
 logger = get_logger(__name__)
 

@@ -91,10 +91,14 @@ class USStockFetcher(BaseFetcher):
                 )
 
                 if df.empty:
-                    logger.warning(f"No data returned for {self.symbol} (attempt {attempt}/{self.max_retries})")
+                    logger.warning(
+                        f"No data returned for {self.symbol} (attempt {attempt}/{self.max_retries})"
+                    )
                     if attempt == self.max_retries:
                         raise DataFetchError(
-                            f"No data returned for {self.symbol}", symbol=self.symbol, source="yfinance"
+                            f"No data returned for {self.symbol}",
+                            symbol=self.symbol,
+                            source="yfinance",
                         )
                     continue
 
