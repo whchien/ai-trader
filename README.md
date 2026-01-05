@@ -22,31 +22,40 @@ A professional, config-driven backtesting framework for algorithmic trading, bui
 
 **1. Installation**
 
-**Option A: Install from PyPI (Recommended)**
+**Option A: Install from PyPI (Recommended for using the CLI)**
 ```bash
 pip install ai-trader
 ```
+Use this if you want to:
+- Use the CLI commands: `ai-trader run`, `ai-trader fetch`, `ai-trader quick`
+- Run backtests on your own data files
+- Use as a library in your Python projects
 
-**Option B: Install from Source**
+**Option B: Install from Source (Recommended for examples and config templates)**
 ```bash
 git clone https://github.com/whchien/ai-trader.git
 cd ai-trader
 pip install -e .
 ```
+Use this if you want to:
+- Run the config-based examples in `config/backtest/`
+- Use the example data files in `data/`
+- Run the example scripts in `scripts/examples/`
+- Contribute or customize strategies
 *(Poetry users can run `poetry install`)*
 
-**2. Run a Backtest via CLI (Recommended)**
+**2. Run a Backtest via CLI**
 
-Run a predefined backtest using a configuration file:
+**If you cloned from source**, run a predefined backtest using a configuration file:
 ```bash
-# Run a backtest from a config file
+# Run a backtest from a config file (requires source installation)
 ai-trader run config/backtest/classic/sma_example.yaml
 ```
 
-Or, run a quick backtest on a specific data file:
+Or, run a quick backtest on any data file (works with both pip and source installation):
 ```bash
-# Quick backtest without a config file
-ai-trader quick CrossSMAStrategy data/us_stock/tsm.csv --cash 100000
+# Quick backtest on your own data file
+ai-trader quick CrossSMAStrategy your_data.csv --cash 100000
 ```
 
 **3. Fetch Market Data**
@@ -55,6 +64,9 @@ Download historical data for any supported market:
 ```bash
 # US Stock
 ai-trader fetch AAPL --market us_stock --start-date 2020-01-01
+
+# Taiwan Stock (台灣股票)
+ai-trader fetch 2330 --market tw_stock --start-date 2020-01-01
 
 # Cryptocurrency
 ai-trader fetch BTC-USD --market crypto --start-date 2020-01-01

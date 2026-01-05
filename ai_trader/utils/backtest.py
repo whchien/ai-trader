@@ -85,7 +85,6 @@ def add_stock_data(
     # Create data feed
     feed = bt.feeds.PandasData(
         dataname=df,
-        openinterest=None,
         timeframe=bt.TimeFrame.Days,
     )
 
@@ -140,9 +139,7 @@ def add_portfolio_data(
         # Create and add data feed
         data = bt.feeds.PandasData(
             dataname=df,
-            name=ticker,
             timeframe=bt.TimeFrame.Days,
-            plot=False,
         )
         cerebro.adddata(data, name=ticker)
 
