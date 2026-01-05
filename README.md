@@ -63,7 +63,7 @@ ai-trader quick CrossSMAStrategy your_data.csv --cash 100000
 Download historical data for any supported market:
 ```bash
 # US Stock
-ai-trader fetch AAPL --market us_stock --start-date 2020-01-01
+ai-trader fetch TSM --market us_stock --start-date 2020-01-01
 
 # Taiwan Stock (台灣股票)
 ai-trader fetch 2330 --market tw_stock --start-date 2020-01-01
@@ -131,12 +131,37 @@ See `scripts/examples/02_step_by_step.py` for a detailed example.
 
 Run `ai-trader` as a server to let AI assistants interact with your backtesting engine.
 
-**Start the Server:**
+**Start the Server (for testing):**
 ```bash
 python -m ai_trader.mcp
 ```
 
-Once running, you can configure an agent like Claude Desktop to connect to it. This enables natural language commands like:
+**Configure with Claude Desktop (Recommended):**
+
+1. Locate your Claude Desktop configuration file:
+   - **macOS/Linux**: `~/.config/Claude/claude_desktop_config.json`
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+2. Add the `ai-trader` MCP server to the `mcpServers` section:
+
+```json
+{
+  "mcpServers": {
+    "ai-trader": {
+      "command": "python3",
+      "args": ["-m", "ai_trader.mcp"],
+      "cwd": "/path/to/ai-trader"
+    }
+  }
+}
+```
+
+**Configuration Notes:**
+- Replace `/path/to/ai-trader` with your actual ai-trader project directory
+- If using a virtual environment, use the full path to the Python executable: `/path/to/.venv/bin/python3`
+- Restart Claude Desktop after updating the config file
+
+Once configured, you can use Claude to interact with your backtesting engine with natural language commands like:
 - *"Run a backtest of the CrossSMAStrategy on TSM data from 2020-2022."*
 - *"List all available trading strategies."*
 - *"Fetch Apple stock data from 2021 to 2024."*

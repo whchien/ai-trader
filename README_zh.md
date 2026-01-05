@@ -119,12 +119,37 @@ results = run_backtest(
 
 將 `ai-trader` 作為伺服器運行，讓 AI 助理與您的回測引擎互動。
 
-**啟動伺服器：**
+**啟動伺服器（測試用）：**
 ```bash
 python -m ai_trader.mcp
 ```
 
-啟動後，您可以設定像 Claude Desktop 這樣的代理程式來連接它。這使得能夠使用自然語言命令，例如：
+**設定 Claude Desktop（建議）：**
+
+1. 找到您的 Claude Desktop 設定檔：
+   - **macOS/Linux**: `~/.config/Claude/claude_desktop_config.json`
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+2. 將 `ai-trader` MCP 伺服器新增至 `mcpServers` 區段：
+
+```json
+{
+  "mcpServers": {
+    "ai-trader": {
+      "command": "python3",
+      "args": ["-m", "ai_trader.mcp"],
+      "cwd": "/path/to/ai-trader"
+    }
+  }
+}
+```
+
+**設定說明：**
+- 將 `/path/to/ai-trader` 替換為您實際的 ai-trader 專案目錄
+- 如果使用虛擬環境，請使用 Python 執行檔的完整路徑：`/path/to/.venv/bin/python3`
+- 更新設定檔後重新啟動 Claude Desktop
+
+設定完成後，您可以使用 Claude 以自然語言命令與回測引擎互動，例如：
 - *"對 TSM 從 2020 年到 2022 年的資料運行 CrossSMAStrategy 的回測。"*
 - *"列出所有可用的交易策略。"*
 - *"擷取從 2021 年到 2024 年的蘋果股票資料。"*
