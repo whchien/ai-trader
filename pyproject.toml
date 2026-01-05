@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-trader"
-version = "0.3.2"
+version = "0.3.3"
 description = "Backtrader-powered backtesting framework for algorithmic trading, featuring 20+ strategies, multi-market support, CLI tools, and an integrated MCP server for professional traders."
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
