@@ -44,7 +44,21 @@ class HybridAlphaRSIStrategy(BaseStrategy):
         os_max=35,
     )
 
+    # Parameter descriptions (inline for reference):
+    # rsi_length: Base RSI period before adaptive adjustment
+    # atr_length: ATR period for volatility measurement
+    # atr_ma_period: Moving average period for ATR smoothing
+    # min_period: Minimum RSI period in low volatility
+    # max_period: Maximum RSI period in high volatility
+    # adaptive_sensitivity: Sensitivity of RSI period to volatility changes
+    # smoothing_length: Period for smoothing RSI output
+    # trend_sma_period: SMA period for trend bias calculation
+    # level_sensitivity: Sensitivity of OB/OS levels to volatility
+    # ob_base, os_base: Base overbought/oversold levels
+    # ob_min/max, os_min/max: Range for adaptive level adjustment
+
     def __init__(self):
+        """Initialize Hybrid AlphaRSI with adaptive levels, trend filter, and dual RSI."""
         super().__init__()
         # Initialize the Hybrid AlphaRSI indicator with strategy parameters
         self.indicator = HybridAlphaRSI(
@@ -67,6 +81,7 @@ class HybridAlphaRSIStrategy(BaseStrategy):
         )
 
     def next(self):
+        """Execute trading logic: buy on RSI oversold crossover in uptrend, sell on overbought in downtrend."""
         # Extract indicator values
         rsi = self.indicator.rsi[0]
         os_level = self.indicator.os_level[0]

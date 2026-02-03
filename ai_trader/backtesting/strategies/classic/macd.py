@@ -5,25 +5,38 @@ from ai_trader.backtesting.strategies.base import BaseStrategy
 
 class MACDStrategy(BaseStrategy):
     """
-    MACD consists of three lines.
-    DIF: the difference between two moving averages (fast moving average (typically 12 days) and
-    the slow moving average (typically 26 days).
-    DEA: a nine-day exponential moving average of the DIF
-    MACD histogram: The MACD histogram is the difference between the DIF line and the DEA line, used to show the
-    divergence between the DIF line and the DEA line.
+    MACD Strategy - Trend-following via moving average crossovers and histogram.
 
-    The buy signal in the MACD strategy occurs when a golden cross appears.
-    When the DIF line crosses above the DEA line and the MACD histogram shifts from negative to positive,
-    traders can consider buying to participate in the upward trend.
+    MACD consists of three components:
+    - DIF (MACD line): Fast EMA (12-day) - Slow EMA (26-day); measures momentum
+    - DEA (Signal line): EMA of the DIF line; acts as trigger for crossovers
+    - MACD Histogram: DIF - DEA; visually shows momentum strength and divergence
 
-    The sell signal in the MACD strategy occurs when a death cross appears.
-    When the DIF line crosses below the DEA line and the MACD histogram shifts from positive to negative,
-    traders can consider selling to avoid a downward trend.
+    Entry Logic (Buy):
+    - Golden cross: DIF crosses above DEA (bullish crossover)
+    - AND both DIF and DEA are above zero (uptrend context)
+
+    Exit Logic (Sell):
+    - Death cross: DIF crosses below DEA (bearish crossover)
+    - No histogram confirmation needed for exit (captures reversals quickly)
+
+    Parameters:
+    - fastperiod (int): Fast EMA period [default: 12]
+    - slowperiod (int): Slow EMA period [default: 22]
+    - signalperiod (int): Signal line (DEA) EMA period [default: 8]
+
+    Notes:
+    - Golden cross indicates momentum shift from negative to positive
+    - Death cross indicates reversal from positive to negative momentum
+    - Positive histogram confirmation on buy reduces false signals
+    - MACD works well on daily and longer timeframes
+    - Relatively slow indicator; lags on fast intraday moves
     """
 
     params = dict(fastperiod=12, slowperiod=22, signalperiod=8)
 
     def __init__(self):
+        """Initialize MACD with crossover detection and positive histogram confirmation."""
         kwargs = {
             "fastperiod": self.p.fastperiod,
             "fastmatype": bt.talib.MA_Type.EMA,
@@ -42,6 +55,7 @@ class MACDStrategy(BaseStrategy):
         self.order = None
 
     def next(self):
+        """Execute trading logic: buy on golden cross with positive histogram, sell on death cross."""
         if self.order:
             return
 

@@ -26,7 +26,20 @@ class VCPStrategy(BaseStrategy):
         recent_price_period=20,
     )
 
+    # Parameter descriptions (inline for reference):
+    # period_short: Short lookback period for volatility contraction detection
+    # period_long: Long lookback period for establishing baseline volatility
+    # period_long_discount: Volatility discount ratio for pattern detection
+    # highest_close: Period to find recent highest close price
+    # mean_vol: Period for calculating mean volume
+    # sustain_period: Minimum period to sustain VCP pattern
+    # min_volume_ratio: Minimum volume ratio for pattern validity
+    # sma_long: Long-term SMA for uptrend confirmation (250-day)
+    # sma_short: Short-term SMA for exit trigger (60-day)
+    # recent_price_period: Period for recent price range analysis
+
     def __init__(self):
+        """Initialize VCP pattern detector, trend SMAs, and narrow channel filter."""
         self.vcp = VCPPattern(
             self.data,
             period_short=self.params.period_short,
@@ -51,6 +64,7 @@ class VCPStrategy(BaseStrategy):
         self.narrow_channel = recent_close_min > recent_close_max * 0.7
 
     def next(self):
+        """Execute trading logic: buy on VCP breakout with multiple confirmations, exit on trend breakdown."""
         # Condition 1: The VCP (Volatility Contraction Pattern) must be positive
         cond_1 = self.vcp > 0
 

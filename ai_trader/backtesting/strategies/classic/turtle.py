@@ -5,14 +5,35 @@ from ai_trader.backtesting.strategies.base import BaseStrategy
 
 class TurtleTradingStrategy(BaseStrategy):
     """
-    In the Turtle Trading strategy, ATR is often used as a measure of volatility to determine position size and stop
-    levels. Traders adjust their position size based on the current volatility, aiming to risk a consistent
-    percentage of their trading capital on each trade. Additionally, ATR is used to set stop-loss levels dynamically,
-    ensuring that stops are placed at levels that reflect the current market conditions.
+    Turtle Trading Strategy - Breakout trading with volatility-based position management.
 
-    Read more:
-    https://medium.com/@jesso1908joy/testing-turtle-trading-strategy-in-backtrader-b3a6e2075703
+    A classic trend-following strategy based on the famous Turtle Trading system.
+    Enters on Donchian channel breakouts, scales in with pyramiding as price moves
+    favorably, and uses ATR for dynamic stop-loss and position sizing.
 
+    Entry Logic (Buy):
+    - Price closes above the 20-day Donchian high (strong breakout)
+    - Initiates first position at entry price
+
+    Pyramiding/Scaling In:
+    - Add to position when price rises 0.5 ATR from entry
+    - Maximum 4 add-ons allowed (total 5 partial entries)
+
+    Exit Logic (Sell):
+    - Stop loss: Price falls 2 ATR below entry price (risk control)
+    - Take profit: Price closes below 10-day Donchian low (exit consolidation)
+
+    Parameters:
+    - long_period (int): Period for upper Donchian channel (entry) [default: 20]
+    - short_period (int): Period for lower Donchian channel (exit) [default: 10]
+
+    Notes:
+    - ATR (Average True Range) measures volatility; adjusts stops dynamically
+    - Position sizing: 1% of account / ATR = number of units per add-on
+    - Pyramiding captures strength in sustained trends
+    - 2 ATR stop-loss provides room for market noise while limiting risk
+    - System favors strong trends with disciplined risk management
+    - Reference: https://medium.com/@jesso1908joy/testing-turtle-trading-strategy-in-backtrader-b3a6e2075703
     """
 
     params = dict(
@@ -21,6 +42,7 @@ class TurtleTradingStrategy(BaseStrategy):
     )
 
     def __init__(self):
+        """Initialize Donchian channels, ATR, and pyramiding controls."""
         self.order = None
         self.buy_count = 0
         self.last_price = 0
@@ -59,6 +81,7 @@ class TurtleTradingStrategy(BaseStrategy):
         )
 
     def next(self):
+        """Execute trading logic: breakout entry, pyramiding adds, ATR-based stops and exits."""
         if self.order:
             return
 

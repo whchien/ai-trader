@@ -6,12 +6,38 @@ from ai_trader.backtesting.strategies.indicators import TripleRSI
 
 class TripleRSIRotationStrategy(BaseStrategy):
     """
-    The main entry condition for this strategy is the strengthening of the long-term RSI indicator.
-    The primary entry condition is when the stock price falls below the quarterly moving average,
-    and the short-term RSI is not overheated. When the medium to long-term RSI performs stably,
-    it is suitable for holding. Stocks are rotated monthly.
+    Triple RSI Rotation Strategy - Monthly portfolio rotation with multi-timeframe confirmation.
 
-    More details: https://zhuanlan.zhihu.com/p/269443883
+    Rotates a multi-asset portfolio monthly, selecting assets with strong TripleRSI signals
+    (multi-timeframe bullish alignment). Ranks selected assets by trading volume to ensure
+    liquidity. Equal-weight allocation among selected assets, rebalanced monthly.
+
+    Entry Logic (Buy):
+    - TripleRSI signal > 0 (short, medium, and long-term RSI all aligned bullishly)
+    - Asset ranked in top-5 by average trading volume (liquidity filter)
+
+    Exit Logic (Sell):
+    - Position closed if asset no longer meets TripleRSI > 0 criterion
+    - Rebalance event (monthly) reallocates capital to new selections
+
+    Parameters:
+    - rebal_month (list): Months for rebalancing (2,4,6,8,10,12) [default: even months]
+    - rebal_monthday (list): Day of month to trigger rebalance [default: 5th]
+    - num_volume (int): Number of top-volume assets to select [default: 5]
+    - rsi_short (int): Short-term RSI period [default: 20]
+    - rsi_mid (int): Medium-term RSI period [default: 60]
+    - rsi_long (int): Long-term RSI period [default: 120]
+    - holding_period (int): Minimum holding period in days [default: 60]
+    - oversold (int): RSI oversold level [default: 55]
+    - overbought (int): RSI overbought level [default: 75]
+
+    Notes:
+    - Monthly rebalancing provides systematic portfolio rotation
+    - TripleRSI filters for high-conviction bullish setups across timeframes
+    - Volume ranking ensures liquid, tradable positions
+    - Equal-weight allocation provides diversification
+    - Typical holding 30-60 days between monthly rebalances
+    - Reference: https://zhuanlan.zhihu.com/p/269443883
     """
 
     params = dict(
@@ -27,6 +53,7 @@ class TripleRSIRotationStrategy(BaseStrategy):
     )
 
     def __init__(self):
+        """Initialize TripleRSI indicators for all assets and schedule monthly rebalancing timer."""
         self.indicators = {
             data: TripleRSI(
                 data,
@@ -49,12 +76,15 @@ class TripleRSIRotationStrategy(BaseStrategy):
         )
 
     def notify_timer(self, timer, when, *args, **kwargs):
+        """Callback executed on scheduled rebalancing days."""
         self.rebalance()
 
     def next(self):
+        """Placeholder; all trading logic handled in rebalance() via timer."""
         pass
 
     def rebalance(self):
+        """Execute portfolio rebalancing: filter by TripleRSI signal, select top-k by volume, allocate equally."""
         # Get current date from index
         current_date = self.data0.datetime.date(0)
         self.log(f"Rebalance date: {current_date}")

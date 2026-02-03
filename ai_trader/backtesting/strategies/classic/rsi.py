@@ -35,6 +35,35 @@ class RsiBollingerBandsStrategy(BaseStrategy):
 
 
 class TripleRsiStrategy(BaseStrategy):
+    """
+    Triple RSI Strategy - Multi-timeframe RSI confirmation with time-based exit.
+
+    Uses three RSI indicators at different timeframes (short, medium, long) to
+    generate high-confidence signals. Requires alignment across multiple timeframes
+    for entry. Time-based exit prevents indefinite holding periods.
+
+    Entry Logic (Buy):
+    - TripleRSI signal > 0 (all three RSI indicators aligned bullishly)
+
+    Exit Logic (Sell):
+    - Close price falls below 60-period SMA (trend reversal) AND
+    - Position held for minimum 60 days (time filter)
+
+    Parameters:
+    - rsi_short (int): Short-term RSI period [default: 20]
+    - rsi_mid (int): Medium-term RSI period [default: 60]
+    - rsi_long (int): Long-term RSI period [default: 120]
+    - holding_period (int): Minimum holding period in days [default: 60]
+    - oversold (int): RSI level for oversold condition [default: 55]
+    - overbought (int): RSI level for overbought condition [default: 75]
+
+    Notes:
+    - TripleRSI synthesizes three timeframes to reduce false signals
+    - Time-based exit (60 days) ensures position cycling and risk management
+    - SMA trend filter prevents selling in early uptrend
+    - Works well with buy-and-hold bias; filters mean-reversion trades
+    """
+
     params = dict(
         rsi_short=20,
         rsi_mid=60,
@@ -45,6 +74,7 @@ class TripleRsiStrategy(BaseStrategy):
     )
 
     def __init__(self):
+        """Initialize Triple RSI indicator across three timeframes and trend SMA."""
         self.rsi = TripleRSI(
             self.data.close,
             rsi_short=self.params.rsi_short,
@@ -57,6 +87,7 @@ class TripleRsiStrategy(BaseStrategy):
         self.entry_date = None
 
     def next(self):
+        """Execute trading logic: buy on TripleRSI signal, sell on trend reversal after min holding period."""
         buy_signal = self.rsi > 0
         close_signal = self.data.close[0] < self.sma[0]
 
