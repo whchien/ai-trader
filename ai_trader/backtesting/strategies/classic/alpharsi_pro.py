@@ -18,6 +18,26 @@ class AlphaRSIProStrategy(BaseStrategy):
 
     This strategy only takes positions aligned with the underlying trend,
     significantly reducing false signals in choppy markets.
+
+    Parameters:
+    - rsi_period (int): RSI calculation period [default: 14]
+    - smoothing_period (int): Period for smoothing RSI [default: 5]
+    - smoothing_type (str): Type of smoothing (SMA/EMA) [default: "SMA"]
+    - atr_period (int): ATR period for volatility measurement [default: 14]
+    - atr_ma_period (int): Moving average period for ATR smoothing [default: 50]
+    - trend_sma_period (int): SMA period for trend bias calculation [default: 50]
+    - sensitivity (int): Sensitivity of level adaptation to volatility [default: 20]
+    - ob_base (int): Base overbought level [default: 70]
+    - os_base (int): Base oversold level [default: 30]
+    - ob_min (int): Minimum overbought level in low volatility [default: 65]
+    - ob_max (int): Maximum overbought level in high volatility [default: 85]
+    - os_min (int): Minimum oversold level in low volatility [default: 15]
+    - os_max (int): Maximum oversold level in high volatility [default: 35]
+
+    Notes:
+    - Adaptive levels adjust to volatility; wider in trending markets, tighter in choppy ones
+    - Trend bias filter prevents counter-trend trades; significantly reduces drawdowns
+    - RSI smoothing reduces noise while preserving crossover timing
     """
 
     params = dict(
@@ -37,6 +57,7 @@ class AlphaRSIProStrategy(BaseStrategy):
     )
 
     def __init__(self):
+        """Initialize AlphaRSI Pro with adaptive volatility levels and trend filter."""
         super().__init__()
         # Initialize the AlphaRSI Pro indicator with strategy parameters
         self.indicator = AlphaRSIPro(
@@ -57,6 +78,7 @@ class AlphaRSIProStrategy(BaseStrategy):
         )
 
     def next(self):
+        """Execute trading logic: buy on RSI oversold in uptrend, sell on overbought in downtrend."""
         # Extract indicator values
         rsi_smooth = self.indicator.rsi_smooth[0]
         os_level = self.indicator.os_level[0]

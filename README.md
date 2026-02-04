@@ -168,6 +168,31 @@ Once configured, you can use Claude to interact with your backtesting engine wit
 
 ## Creating Custom Strategies
 
+### Option 1: Using Claude Code Skills (Recommended)
+
+The fastest way to create a new strategy is with the `/add-strategy` skill in Claude Code. The skill guides you through the process interactively:
+
+```bash
+/add-strategy classic
+```
+
+This will prompt you for:
+- Strategy name (e.g., "MACDBBands")
+- Description
+- Parameters with defaults
+- Entry and exit conditions
+- Any custom indicators
+
+The skill automatically handles:
+- File creation with proper naming conventions
+- Comprehensive docstrings
+- Automatic registration in `__init__.py`
+- Syntax validation
+
+Learn more about Claude Code skills: https://code.claude.com/docs/en/skills
+
+### Option 2: Manual Creation
+
 Create a new file in `ai_trader/backtesting/strategies/classic/` and inherit from `BaseStrategy`.
 
 ```python
@@ -187,6 +212,7 @@ class MyCustomStrategy(BaseStrategy):
         elif self.position and self.data.close[0] < self.sma[0]:
             self.close()
 ```
+
 The new strategy is automatically available to the CLI and `run_backtest` function.
 
 ## Documentation & Resources

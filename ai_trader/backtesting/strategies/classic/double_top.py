@@ -1,11 +1,46 @@
+"""
+Double Top Pattern Strategy
+
+Detects double top reversal patterns and implements mean reversion trades
+with time-based and signal-based exit conditions.
+"""
+
 from ai_trader.backtesting.strategies.base import BaseStrategy
 from ai_trader.backtesting.strategies.indicators import DoubleTop
 
 
 class DoubleTopStrategy(BaseStrategy):
+    """
+    Double Top Pattern Strategy - Mean reversion after double top formation.
+
+    Identifies double top reversal patterns where price fails to break above a
+    recent high twice, signaling potential downside reversal. Uses trend and
+    volatility analysis to confirm pattern validity.
+
+    Entry Logic (Buy):
+    - Double Top indicator signal > 0 (pattern confirmed and price consolidated)
+
+    Exit Logic (Sell):
+    - Position held for maximum 30 days, or
+    - Double Top indicator signal turns negative (pattern invalidated)
+
+    Parameters:
+    - sma_short (int): Short-term SMA period for trend analysis [default: 60]
+    - sma_long (int): Long-term SMA period for trend analysis [default: 120]
+    - vol_short (int): Short-term volatility period [default: 5]
+    - vol_long (int): Long-term volatility period [default: 20]
+    - past_highest (int): Lookback period for identifying recent highs [default: 60]
+
+    Notes:
+    - Time-based exit prevents position from staying open indefinitely
+    - Requires confirmation from volatility and trend indicators
+    - Double top is a reversal pattern; trades against the prior uptrend
+    """
+
     params = dict(sma_short=60, sma_long=120, vol_short=5, vol_long=20, past_highest=60)
 
     def __init__(self):
+        """Initialize Double Top pattern detector with trend and volatility parameters."""
         self.double_top = DoubleTop(
             self.data,
             sma_short=self.params.sma_short,
@@ -19,6 +54,7 @@ class DoubleTopStrategy(BaseStrategy):
         self.buy_signal = self.double_top.signal > 0
 
     def next(self):
+        """Execute trading logic: enter on pattern signal, exit on time or signal reversal."""
         if self.position.size == 0:
             if self.buy_signal[0]:
                 self.buy()

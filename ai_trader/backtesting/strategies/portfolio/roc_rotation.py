@@ -1,12 +1,48 @@
+"""
+Rate of Change (ROC) Rotation Strategy
+
+Multi-asset portfolio strategy that rotates capital to assets with
+the strongest positive momentum, concentrating positions in top-k assets.
+"""
+
 import backtrader as bt
 
 from ai_trader.backtesting.strategies.base import BaseStrategy
 
 
 class ROCRotationStrategy(BaseStrategy):
+    """
+    ROC Rotation Strategy - Dynamic momentum-based multi-asset rotation.
+
+    A portfolio strategy that applies Rate of Change analysis to multiple assets
+    and rotates capital to the top-k assets with strongest momentum (highest ROC).
+    Exits positions in assets with negative momentum. Equal-weight allocates
+    portfolio among selected assets.
+
+    Entry Logic (Buy):
+    - Asset ROC > 0 (positive momentum)
+    - Asset ranked in top-k by ROC value (highest momentum)
+
+    Exit Logic (Sell):
+    - Asset ROC < 0 (momentum reversal)
+    - Position closed and capital reallocated to better opportunities
+
+    Parameters:
+    - period (int): Period for ROC calculation [default: 20]
+    - top_k (int): Number of top assets to hold (internal, hard-coded to 5)
+
+    Notes:
+    - Rotates portfolio monthly or whenever momentum leaders change
+    - Concentrates in top-5 assets to optimize risk-adjusted returns
+    - Equal-weight allocation across selected assets (95% of capital, 5% buffer)
+    - Positive momentum indicates accelerating price movements
+    - ROC > 0 shows gains over the past period; < 0 shows losses
+    """
+
     params = dict(period=20)
 
     def __init__(self):
+        """Initialize Rate of Change indicators for all assets in the portfolio."""
         self.indicators = {
             data: bt.ind.RateOfChange(data, period=self.params.period) for data in self.datas
         }
@@ -14,6 +50,7 @@ class ROCRotationStrategy(BaseStrategy):
         self.top_k = 5
 
     def next(self):
+        """Execute portfolio rebalancing: exit negative momentum, rotate to top-k momentum leaders."""
         # 1. Select by signals
         # Prepare a quick lookup list of stocks currently holding a position
         holding = [d for d, pos in self.getpositions().items() if pos]

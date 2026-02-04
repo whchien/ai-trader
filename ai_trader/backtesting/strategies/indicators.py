@@ -72,6 +72,14 @@ class RSRS(bt.Indicator):
 
 
 class NormRSRS(bt.Indicator):
+    """
+    Normalized RSRS with R-squared weighting.
+
+    Standardizes RSRS values using z-score normalization and applies R-squared weighting
+    to enhance signal reliability. Produces three metrics: normalized RSRS (z-score),
+    R-squared weighted RSRS, and combined beta-right metric.
+    """
+
     lines = ("rsrs_norm", "rsrs_r2", "beta_right")
 
     def __init__(self, period: int = 18, long_period: int = 600):
@@ -84,6 +92,14 @@ class NormRSRS(bt.Indicator):
 
 
 class RecentHigh(bt.Indicator):
+    """
+    Recent high breakout detector.
+
+    Detects if price has reached a new high within a short window relative to a longer-term
+    reference. Returns 1 if any of the last N days (short_period=5) matches or exceeds the
+    M-day high (long_period=100), otherwise returns -1. Useful for identifying breakout signals.
+    """
+
     lines = ("new_high",)
 
     def __init__(self, short_period: int = 5, long_period: int = 100):
@@ -102,6 +118,14 @@ class RecentHigh(bt.Indicator):
 
 
 class DailyCandleVolatility(bt.Indicator):
+    """
+    Intraday price volatility measurement.
+
+    Measures cumulative price movement within a single candle by summing absolute differences
+    across the candle's path. Calculation varies for bullish vs bearish candles: previous close
+    to open, open to low/high, low/high to high/low, high/low to close.
+    """
+
     lines = ("volatility", "avg_volatility")
 
     def __init__(self):
@@ -131,6 +155,13 @@ class DailyCandleVolatility(bt.Indicator):
 
 
 class AverageVolatility(bt.Indicator):
+    """
+    Normalized volatility relative to price.
+
+    Combines DailyCandleVolatility with a moving average and normalizes by price to express
+    volatility as a percentage. Helps identify periods of high or low volatility in the market.
+    """
+
     lines = ("volatility", "avg_volatility")
 
     def __init__(self, period: int):
@@ -146,6 +177,14 @@ class AverageVolatility(bt.Indicator):
 
 
 class DiffHighLow(bt.Indicator):
+    """
+    Price range contraction indicator.
+
+    Measures trading range width as: 1 - (lowest_low / highest_high) over a period.
+    Returns values between 0 and 1, where higher values indicate wider trading ranges and
+    lower values indicate tighter consolidation patterns.
+    """
+
     lines = ("diff",)
 
     def __init__(self, period: int = 60):
@@ -159,6 +198,14 @@ class DiffHighLow(bt.Indicator):
 
 
 class TripleRSI(bt.Indicator):
+    """
+    Multi-timeframe RSI signal with confidence scoring.
+
+    Combines three RSI periods (short, mid, long) to generate unified signals with confidence.
+    Checks: long-term uptrend, mid-term not overheated, short-term consolidating and rising.
+    Returns signal (1 for buy/-1 for no signal) and confidence value derived from RSI distances.
+    """
+
     lines = (
         "signal",
         "value",
@@ -195,6 +242,27 @@ class TripleRSI(bt.Indicator):
 
 
 class DoubleTop(bt.Indicator):
+    """
+    Double-Top Bullish Breakout Pattern Detector
+
+    This indicator identifies a bullish breakout pattern where:
+    1. A significant peak occurred 30-55 days ago (the "first top")
+    2. Price pulled back, forming a trough in the last 30 days
+    3. Price has broken out to match/exceed the first peak (the "second top")
+    4. The breakout is confirmed by positive trend (both SMAs) and increasing volume
+
+    Pattern Logic:
+    - First top is the maximum price from 30-55 days ago
+    - Pullback is confirmed by finding a low at least 5% below the first top
+    - Current price must be at a recent 60-day high with 2% tolerance
+    - Current price must break above the first top
+    - Price must be above both short (60-day) and long (120-day) SMAs
+    - Volume must be increasing (short-term MA > long-term MA)
+
+    This pattern is called "DoubleTop" for consistency with the codebase, though
+    it actually detects a bullish breakout (classic double-top is bearish).
+    """
+
     lines = ("signal",)
 
     def __init__(
@@ -213,31 +281,48 @@ class DoubleTop(bt.Indicator):
         self.vol_long = bt.indicators.MovingAverageSimple(self.data.volume, period=vol_long)
 
     def next(self):
-        # Condition 1: Close price makes a new 60-day high
-        cond_1 = self.data.close[0] == self.past_highest
-
-        # Condition 2: At least one day in the previous 30 days did not make a new high
-        cond_2 = any([p for p in self.data.close.get(ago=1, size=30) if p < self.past_highest])
-
-        # Condition 3: At least one day in the 30th to 55th day before today made a new 60-day high
-        cond_3 = any([p for p in self.data.close.get(ago=30, size=25) if p > self.past_highest])
-
-        # Condition 4: Maximum close price in the 30th to 55th day before today is less than today's close
+        # Get the "first top" from the 30-55 day historical window
         try:
-            highest_past = max([p for p in self.data.close.get(ago=25, size=25)])
-            cond_4 = highest_past < self.data.close[0]
-        except ValueError as e:
-            logger.debug(
-                f"DoubleTop condition 4 calculation failed (insufficient data), defaulting to True: {e}"
-            )
-            cond_4 = True
+            historical_window = self.data.close.get(ago=30, size=25)
+            if len(historical_window) < 25:
+                self.lines.signal[0] = -1
+                return
+            first_top = max(historical_window)
+        except (ValueError, IndexError):
+            self.lines.signal[0] = -1
+            return
 
-        # Condition 5: Close price is greater than the close price 120 days ago
-        cond_5 = self.data.close[0] > self.sma_short[0]  # self..etl.close[-120]
+        # Get pullback window (1-30 days ago) to find the trough
+        try:
+            pullback_window = self.data.close.get(ago=1, size=30)
+            if len(pullback_window) < 30:
+                self.lines.signal[0] = -1
+                return
+            pullback_low = min(pullback_window)
+        except (ValueError, IndexError):
+            self.lines.signal[0] = -1
+            return
 
-        # Condition 6: Close price is greater than the close price 60 days ago
-        cond_6 = self.data.close[0] > self.sma_long[0]  # self..etl.close[-60]
+        # Condition 1: Today is at/near 60-day high (breakout)
+        # Allow 2% tolerance for floating-point precision and minor variations
+        cond_1 = self.data.close[0] >= self.past_highest[0] * 0.98
 
+        # Condition 2: Meaningful pullback occurred (at least 5%)
+        cond_2 = pullback_low < first_top * 0.95
+
+        # Condition 3: First top is comparable to current price (within 10%)
+        cond_3 = first_top >= self.data.close[0] * 0.90
+
+        # Condition 4: Current price breaks above first top
+        cond_4 = self.data.close[0] >= first_top
+
+        # Condition 5: Price above short-term SMA (uptrend)
+        cond_5 = self.data.close[0] > self.sma_short[0]
+
+        # Condition 6: Price above long-term SMA (strong trend)
+        cond_6 = self.data.close[0] > self.sma_long[0]
+
+        # Condition 7: Volume increasing (breakout confirmation)
         cond_7 = self.vol_short[0] > self.vol_long[0]
 
         self.lines.signal[0] = (

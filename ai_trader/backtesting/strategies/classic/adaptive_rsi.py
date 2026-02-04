@@ -19,6 +19,23 @@ class AdaptiveRSIStrategy(BaseStrategy):
     The RSI period adapts to market volatility and cycles:
     - High volatility/fast cycles → shorter period (more responsive)
     - Low volatility/slow cycles → longer period (more stable)
+
+    Parameters:
+    - rsi_length (int): Base RSI period before adaptation [default: 14]
+    - atr_length (int): ATR period for volatility measurement [default: 14]
+    - min_period (int): Minimum RSI period in low volatility [default: 8]
+    - max_period (int): Maximum RSI period in high volatility [default: 28]
+    - adaptive_sensitivity (float): Sensitivity of period adaptation to volatility [default: 1.0]
+    - smoothing_length (int): Smoothing period for adjusted RSI [default: 3]
+    - ob_level (int): Standard overbought level [default: 70]
+    - os_level (int): Standard oversold level [default: 30]
+    - extreme_ob_level (int): Extreme overbought level for reversal signals [default: 80]
+    - extreme_os_level (int): Extreme oversold level for reversal signals [default: 20]
+
+    Notes:
+    - Dual signals: normal crossovers + extreme reversals for flexibility
+    - Volatility-responsive period improves signal quality across market regimes
+    - Smoothing reduces noise while preserving crossover timing
     """
 
     params = dict(
@@ -35,6 +52,7 @@ class AdaptiveRSIStrategy(BaseStrategy):
     )
 
     def __init__(self):
+        """Initialize Adaptive RSI indicator with dynamic period and level adjustment."""
         super().__init__()
         # Initialize the Adaptive RSI indicator with strategy parameters
         self.indicator = AdaptiveRSI(
@@ -52,6 +70,7 @@ class AdaptiveRSIStrategy(BaseStrategy):
         )
 
     def next(self):
+        """Execute trading logic: buy on RSI oversold crossover or extreme reversal, sell on overbought."""
         # Extract indicator values
         rsi = self.indicator.rsi[0]
 
