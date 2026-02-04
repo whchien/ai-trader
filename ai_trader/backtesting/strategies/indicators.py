@@ -72,6 +72,14 @@ class RSRS(bt.Indicator):
 
 
 class NormRSRS(bt.Indicator):
+    """
+    Normalized RSRS with R-squared weighting.
+
+    Standardizes RSRS values using z-score normalization and applies R-squared weighting
+    to enhance signal reliability. Produces three metrics: normalized RSRS (z-score),
+    R-squared weighted RSRS, and combined beta-right metric.
+    """
+
     lines = ("rsrs_norm", "rsrs_r2", "beta_right")
 
     def __init__(self, period: int = 18, long_period: int = 600):
@@ -84,6 +92,14 @@ class NormRSRS(bt.Indicator):
 
 
 class RecentHigh(bt.Indicator):
+    """
+    Recent high breakout detector.
+
+    Detects if price has reached a new high within a short window relative to a longer-term
+    reference. Returns 1 if any of the last N days (short_period=5) matches or exceeds the
+    M-day high (long_period=100), otherwise returns -1. Useful for identifying breakout signals.
+    """
+
     lines = ("new_high",)
 
     def __init__(self, short_period: int = 5, long_period: int = 100):
@@ -102,6 +118,14 @@ class RecentHigh(bt.Indicator):
 
 
 class DailyCandleVolatility(bt.Indicator):
+    """
+    Intraday price volatility measurement.
+
+    Measures cumulative price movement within a single candle by summing absolute differences
+    across the candle's path. Calculation varies for bullish vs bearish candles: previous close
+    to open, open to low/high, low/high to high/low, high/low to close.
+    """
+
     lines = ("volatility", "avg_volatility")
 
     def __init__(self):
@@ -131,6 +155,13 @@ class DailyCandleVolatility(bt.Indicator):
 
 
 class AverageVolatility(bt.Indicator):
+    """
+    Normalized volatility relative to price.
+
+    Combines DailyCandleVolatility with a moving average and normalizes by price to express
+    volatility as a percentage. Helps identify periods of high or low volatility in the market.
+    """
+
     lines = ("volatility", "avg_volatility")
 
     def __init__(self, period: int):
@@ -146,6 +177,14 @@ class AverageVolatility(bt.Indicator):
 
 
 class DiffHighLow(bt.Indicator):
+    """
+    Price range contraction indicator.
+
+    Measures trading range width as: 1 - (lowest_low / highest_high) over a period.
+    Returns values between 0 and 1, where higher values indicate wider trading ranges and
+    lower values indicate tighter consolidation patterns.
+    """
+
     lines = ("diff",)
 
     def __init__(self, period: int = 60):
@@ -159,6 +198,14 @@ class DiffHighLow(bt.Indicator):
 
 
 class TripleRSI(bt.Indicator):
+    """
+    Multi-timeframe RSI signal with confidence scoring.
+
+    Combines three RSI periods (short, mid, long) to generate unified signals with confidence.
+    Checks: long-term uptrend, mid-term not overheated, short-term consolidating and rising.
+    Returns signal (1 for buy/-1 for no signal) and confidence value derived from RSI distances.
+    """
+
     lines = (
         "signal",
         "value",

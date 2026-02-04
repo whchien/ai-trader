@@ -156,6 +156,31 @@ python -m ai_trader.mcp
 
 ## 建立自訂策略
 
+### 選項 1：使用 Claude Code 技能（推薦）
+
+創建新策略最快的方法是使用 Claude Code 中的 `/add-strategy` 技能。該技能以互動方式引導您完成整個過程：
+
+```bash
+/add-strategy classic
+```
+
+它將提示您提供：
+- 策略名稱（例如「MACDBBands」）
+- 描述
+- 帶有預設值的參數
+- 進入和退出條件
+- 任何自訂指標
+
+該技能會自動處理：
+- 以適當命名慣例建立檔案
+- 全面的文件字符串
+- 在 `__init__.py` 中自動註冊
+- 語法驗證
+
+了解更多有關 Claude Code 技能的資訊：https://code.claude.com/docs/en/skills
+
+### 選項 2：手動建立
+
 在 `ai_trader/backtesting/strategies/classic/` 中建立一個新檔案，並繼承 `BaseStrategy`。
 
 ```python
