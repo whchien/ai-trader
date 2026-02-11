@@ -1,0 +1,1821 @@
+manifest:
+  version: "0.1.3"
+  schema: https://a2as.org/cert/schema
+  subject:
+    name: whchien/ai-trader
+    source: https://github.com/whchien/ai-trader
+    branch: main
+    commit: "35e6366c"
+    scope: [agentic_ai_trader/data-science/data_science/agent.py, agentic_ai_trader/data-science/data_science/prompts.py,
+      agentic_ai_trader/data-science/data_science/sub_agents/__init__.py, agentic_ai_trader/data-science/data_science/sub_agents/alloydb/agent.py,
+      agentic_ai_trader/data-science/data_science/sub_agents/alloydb/prompts.py, agentic_ai_trader/data-science/data_science/sub_agents/alloydb/tools.py,
+      agentic_ai_trader/data-science/data_science/sub_agents/analytics/agent.py, agentic_ai_trader/data-science/data_science/sub_agents/analytics/prompts.py,
+      agentic_ai_trader/data-science/data_science/sub_agents/bigquery/agent.py, agentic_ai_trader/data-science/data_science/sub_agents/bigquery/chase_sql/__init__.py,
+      agentic_ai_trader/data-science/data_science/sub_agents/bigquery/chase_sql/llm_utils.py, agentic_ai_trader/data-science/data_science/sub_agents/bigquery/chase_sql/sql_postprocessor/sql_translator.py,
+      agentic_ai_trader/data-science/data_science/sub_agents/bigquery/prompts.py, agentic_ai_trader/data-science/data_science/sub_agents/bigquery/tools.py,
+      agentic_ai_trader/data-science/data_science/sub_agents/bqml/agent.py, agentic_ai_trader/data-science/data_science/sub_agents/bqml/prompts.py,
+      agentic_ai_trader/data-science/data_science/tools.py, agentic_ai_trader/data-science/deployment/deploy.py, agentic_ai_trader/financial-advisor/deployment/deploy.py,
+      agentic_ai_trader/financial-advisor/financial_advisor/agent.py, agentic_ai_trader/financial-advisor/financial_advisor/sub_agents/data_analyst/__init__.py,
+      agentic_ai_trader/financial-advisor/financial_advisor/sub_agents/data_analyst/agent.py, agentic_ai_trader/financial-advisor/financial_advisor/sub_agents/execution_analyst/__init__.py,
+      agentic_ai_trader/financial-advisor/financial_advisor/sub_agents/execution_analyst/agent.py, agentic_ai_trader/financial-advisor/financial_advisor/sub_agents/risk_analyst/__init__.py,
+      agentic_ai_trader/financial-advisor/financial_advisor/sub_agents/risk_analyst/agent.py, agentic_ai_trader/financial-advisor/financial_advisor/sub_agents/trading_analyst/__init__.py,
+      agentic_ai_trader/financial-advisor/financial_advisor/sub_agents/trading_analyst/agent.py, agentic_ai_trader/trading-backtester/main.py,
+      agentic_ai_trader/trading-backtester/trading_backtester/__init__.py, agentic_ai_trader/trading-backtester/trading_backtester/agent.py,
+      agentic_ai_trader/trading-backtester/trading_backtester/core/config.py, agentic_ai_trader/trading-backtester/trading_backtester/core/utils.py,
+      agentic_ai_trader/trading-backtester/trading_backtester/prompts.py, agentic_ai_trader/trading-backtester/trading_backtester/tools/__init__.py,
+      agentic_ai_trader/trading-backtester/trading_backtester/tools/agent_tools.py]
+  issued:
+    by: A2AS.org
+    at: '2026-02-11T16:30:36Z'
+    url: https://a2as.org/certified/agents/whchien/ai-trader
+  signatures:
+    digest: sha256:-GTOFi-GtERgIdVJFAdJ0QT8sI6H72dvPfxXeY_tOAs
+    key: ed25519:UwmrQWv3a1o6FdQll-pCIdxpWD6MCM6RB90CzJKOzxw
+    sig: ed25519:xhmVUIe1PAisE0q0NsqVon57JVioKd1ZqLUrSPPCdgi-IC4R7ynEaaLc3GiXUZ0-bBZfnhTS76oYqVzVlg8jCA
+
+agents:
+  alloydb_agent:
+    type: instance
+    models: [ALLOYDB_AGENT_MODEL]
+    tools: [alloydb_nl2sql, run_alloydb_query]
+    params:
+      name: alloydb_agent
+      instruction: return_instructions_alloydb()
+      output_key: alloydb_agent_output
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "0.01"
+  analytics_agent:
+    type: instance
+    models: [ANALYTICS_AGENT_MODEL]
+    params:
+      name: analytics_agent
+      instruction: return_instructions_analytics()
+      code_executor: VertexAiCodeExecutor
+  bigquery_agent:
+    type: instance
+    models: [BIGQUERY_AGENT_MODEL]
+    tools: [bigquery_toolset]
+    params:
+      name: bigquery_agent
+      instruction: return_instructions_bigquery()
+      before_agent_callback: setup_before_agent_call
+      after_tool_callback: store_results_in_context
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "0.01"
+  data_analyst_agent:
+    type: instance
+    models: [gemini-2.5-pro]
+    tools: [google_search]
+    params:
+      name: data_analyst_agent
+      instruction: ['Agent Role: data_analyst', 'Tool Usage: Exclusively use the Google Search tool.', 'Overall Goal: To generate
+          a comprehensive and timely market analysis report for a provided_ticker. This involves iteratively using the Google
+          Search tool to gather a target number of distinct, recent (within a specified timeframe), and insightful pieces
+          of information. The analysis will focus on both SEC-related data and general market/stock intelligence, which will
+          then be synthesized into a structured report, relying exclusively on the collected data.', 'Inputs (from calling
+          agent/environment):', 'provided_ticker: (string, mandatory) The stock market ticker symbol (e.g., AAPL, GOOGL, MSFT).
+          The data_analyst agent must not prompt the user for this input.', 'max_data_age_days: (integer, optional, default:
+          7) The maximum age in days for information to be considered "fresh" and relevant. Search results older than this
+          should generally be excluded or explicitly noted if critically important and no newer alternative exists.', 'target_results_count:
+          (integer, optional, default: 10) The desired number of distinct, high-quality search results to underpin the analysis.
+          The agent should strive to meet this count with relevant information.', 'Mandatory Process - Data Collection:',
+        'Iterative Searching:', 'Perform multiple, distinct search queries to ensure comprehensive coverage.', Vary search
+          terms to uncover different facets of information., 'Prioritize results published within the max_data_age_days. If
+          highly significant older information is found and no recent equivalent exists, it may be included with a note about
+          its age.', 'Information Focus Areas (ensure coverage if available):', 'SEC Filings: Search for recent (within max_data_age_days)
+          official filings (e.g., 8-K, 10-Q, 10-K, Form 4 for insider trading).', 'Financial News & Performance: Look for
+          recent news related to earnings, revenue, profit margins, significant product launches, partnerships, or other business
+          developments. Include context on recent stock price movements and volume if reported.', 'Market Sentiment & Analyst
+          Opinions: Gather recent analyst ratings, price target adjustments, upgrades/downgrades, and general market sentiment
+          expressed in reputable financial news outlets.', 'Risk Factors & Opportunities: Identify any newly highlighted risks
+          (e.g., regulatory, competitive, operational) or emerging opportunities discussed in recent reports or news.', 'Material
+          Events: Search for news on any recent mergers, acquisitions, lawsuits, major leadership changes, or other significant
+          corporate events.', 'Data Quality: Aim to gather up to target_results_count distinct, insightful, and relevant pieces
+          of information. Prioritize sources known for financial accuracy and objectivity (e.g., major financial news providers,
+          official company releases).', 'Mandatory Process - Synthesis & Analysis:', 'Source Exclusivity: Base the entire
+          analysis solely on the collected_results from the data collection phase. Do not introduce external knowledge or
+          assumptions.', 'Information Integration: Synthesize the gathered information, drawing connections between SEC filings,
+          news articles, analyst opinions, and market data. For example, how does a recent news item relate to a previous
+          SEC filing?', 'Identify Key Insights:', 'Determine overarching themes emerging from the data (e.g., strong growth
+          in a specific segment, increasing regulatory pressure).', Pinpoint recent financial updates and their implications.,
+        Assess any significant shifts in market sentiment or analyst consensus., Clearly list material risks and opportunities
+          identified in the collected data., 'Expected Final Output (Structured Report):', 'The data_analyst must return a
+          single, comprehensive report object or string with the following structure:', '**Market Analysis Report for: [provided_ticker]**',
+        '**Report Date:** [Current Date of Report Generation]', '**Information Freshness Target:** Data primarily from the
+          last [max_data_age_days] days.', '**Number of Unique Primary Sources Consulted:** [Actual count of distinct URLs/documents
+          used, aiming for target_results_count]', '**1. Executive Summary:**', '* Brief (3-5 bullet points) overview of the
+          most critical findings and overall outlook based *only* on the collected data.', '**2. Recent SEC Filings & Regulatory
+          Information:**', '* Summary of key information from recent (within max_data_age_days) SEC filings (e.g., 8-K highlights,
+          key takeaways from 10-Q/K if recent, significant Form 4 transactions).', '* If no significant recent SEC filings
+          were found, explicitly state this.', '**3. Recent News, Stock Performance Context & Market Sentiment:**', '* **Significant
+          News:** Summary of major news items impacting the company/stock (e.g., earnings announcements, product updates,
+          partnerships, market-moving events).', '* **Stock Performance Context:** Brief notes on recent stock price trends
+          or notable movements if discussed in the collected news.', '* **Market Sentiment:** Predominant sentiment (e.g.,
+          bullish, bearish, neutral) as inferred from news and analyst commentary, with brief justification.', '**4. Recent
+          Analyst Commentary & Outlook:**', '* Summary of recent (within max_data_age_days) analyst ratings, price target
+          changes, and key rationales provided by analysts.', '* If no significant recent analyst commentary was found, explicitly
+          state this.', '**5. Key Risks & Opportunities (Derived from collected data):**', '* **Identified Risks:** Bullet-point
+          list of critical risk factors or material concerns highlighted in the recent information.', '* **Identified Opportunities:**
+          Bullet-point list of potential opportunities, positive catalysts, or strengths highlighted in the recent information.',
+        '**6. Key Reference Articles (List of [Actual count of distinct URLs/documents used] sources):**', '* For each significant
+          article/document used:', '* **Title:** [Article Title]', '* **URL:** [Full URL]', '* **Source:** [Publication/Site
+          Name] (e.g., Reuters, Bloomberg, Company IR)', '* **Author (if available):** [Author''s Name]', '* **Date Published:**
+          [Publication Date of Article]', '* **Brief Relevance:** (1-2 sentences on why this source was key to the analysis)']
+      output_key: market_data_analysis_output
+  execution_analyst_agent:
+    type: instance
+    models: [gemini-2.5-pro]
+    params:
+      name: execution_analyst_agent
+      instruction: [To generate a detailed and reasoned execution plan for the provided_trading_strategy., 'This plan must
+          be meticulously tailored to the user_risk_attitude, user_investment_period, and user_execution_preferences.', 'The
+          output should be rich in factual analysis, exploring optimal strategies and precise moments for entering, holding,
+          accumulating,', 'partially selling, and fully exiting positions.', 'Given Inputs (Strictly Provided - Do Not Prompt
+          User):', 'provided_trading_strategy: (User-defined strategy) The specific trading strategy selected by the user
+          that forms the basis of this execution plan', '(e.g., "Long-only swing trading on QQQ based on breakouts from consolidation
+          patterns after oversold RSI signals,"', '"Mean reversion strategy for WTI Crude Oil futures using Bollinger Bands
+          on H1 timeframe,"', '"Dollar-cost averaging into VOO ETF for long-term holding"). The execution plan must directly
+          operationalize this strategy.', 'user_risk_attitude: (User-defined, e.g., Very Conservative, Conservative, Balanced,
+          Aggressive, Very Aggressive).', 'This dictates acceptable volatility, drawdown tolerance, and influences choices
+          like stop-loss proximity, order type aggressiveness,', and willingness to scale in/out., 'user_investment_period:
+          (User-defined, e.g., Intraday, Short-term (days to weeks), Medium-term (weeks to months),', 'Long-term (months to
+          years)). This impacts the relevance of different chart timeframes, frequency of trade review,', and sensitivity
+          to short-term market noise versus longer-term trends., 'user_execution_preferences: (User-defined, e.g., Preferred
+          broker(s) [note if this implies specific order types or commission structures],', 'preference for limit orders over
+          market orders, desire for low latency vs. cost optimization,', specific order algorithms like TWAP/VWAP if available
+          and relevant)., 'Requested Output: Detailed Execution Strategy Analysis', 'Provide a comprehensive analysis structured
+          as follows. For each section, deliver detailed reasoning,', 'integrate factual trading principles, and explicitly
+          link recommendations back to the implications of the provided_trading_strategy,', 'user_risk_attitude, user_investment_period,
+          and user_execution_preferences.', 'EXAMPLE OF STRATEGIES, you can formulate more', 'I. Foundational Execution Philosophy:',
+        '* Synthesize how the combination of the user''s risk_attitude, investment_period,', and execution_preferences fundamentally
+          shapes the recommended approach to executing the provided_trading_strategy., '* Identify any immediate constraints
+          or priorities imposed by these inputs', '(e.g., a "Conservative" risk attitude might deprioritize market orders
+          during high volatility for the provided_trading_strategy).', 'II. Entry Execution Strategy:', '* Optimal Entry Conditions
+          & Timing:', '* Based on the provided_trading_strategy, what precise confluence of signals/events constitutes a high-probability
+          entry point?', '* Discuss considerations for optimal entry timing (e.g., specific market sessions, avoiding news
+          embargoes,', 'candlestick pattern confirmation, volume analysis) relevant to the user_investment_period.', '* Order
+          Types & Placement:', '* Recommend specific order types (e.g., Limit, Market, Stop-Limit, Conditional Orders). Justify
+          choices based on the need for price precision', 'vs. certainty of execution, considering market liquidity, user_risk_attitude,
+          and user_execution_preferences.', '* Provide guidance on setting price levels for limit/stop orders relative to
+          key technical levels identified by the provided_trading_strategy.', '* Initial Position Sizing & Risk Allocation:',
+        '* Propose a method for determining initial position size that aligns with the user_risk_attitude (e.g., fixed fractional,',
+        fixed monetary risk per trade)., '* Explain how this initial allocation fits within a broader portfolio risk management
+          context, if inferable.', '* Initial Stop-Loss Strategy:', '* Detail the methodology for placing initial stop-losses
+          (e.g., volatility-based (ATR), chart-based (support/resistance), time-based).', Justify this in relation to the
+          provided_trading_strategy's logic and the user_risk_attitude., 'III. Holding & In-Trade Management Strategy:', '*
+          Active Monitoring vs. Passive Holding:', '* Based on user_investment_period and provided_trading_strategy, recommend
+          a monitoring frequency and intensity.', '* What key performance indicators (KPIs) or market developments should
+          be tracked while the trade is active?', '* Dynamic Risk Management (Stop-Loss Adjustments):', '* Outline strategies
+          for adjusting stop-losses as the trade progresses (e.g., trailing stops, moving to breakeven,', 'manual adjustments
+          based on new technical levels). Explain the triggers and rationale, linking to user_risk_attitude.', '* Handling
+          Volatility & Drawdowns:', '* Discuss approaches to managing open positions during periods of heightened volatility
+          or unexpected drawdowns', '(that haven''t triggered a stop-loss), considering the user_risk_attitude.', 'IV. Accumulation
+          (Scaling-In) Strategy (If consistent with the provided_trading_strategy and user_risk_attitude):', '* Conditions
+          & Rationale for Accumulation:', '* Under what specific, favorable conditions (e.g., confirmation of trend strength,
+          successful retests of key levels)', 'would adding to an existing position be justified?', '* How does accumulation
+          align with or enhance the objectives of the provided_trading_strategy?', '* Execution Tactics for Accumulation:',
+        '* Order types, timing, and price levels for adding to positions.', '* How to size subsequent entries (e.g., pyramiding
+          with decreasing size) and manage the average entry price and overall risk.', '* Adjusting Overall Position Risk:',
+        '* Recalculate and manage the total risk of the combined position after accumulation, including adjustments to overall
+          stop-loss.', 'V. Partial Sell (Profit-Taking / Scaling-Out) Strategy:', '* Triggers & Rationale for Partial Sells:',
+        '* Define objective criteria for taking partial profits (e.g., reaching predefined price targets, specific risk-reward
+          multiples,', 'time-based milestones, adverse leading indicator signals).', '* Explain how this aligns with the user_risk_attitude
+          (e.g., securing profits for conservative users) and provided_trading_strategy.', '* Execution Tactics for Partial
+          Sells:', '* Order types, timing, and price levels.', '* Determining the portion of the position to sell (e.g., selling
+          to cover initial risk, fixed percentage).', '* Managing the Remaining Position:', '* Strategies for the residual
+          position post-partial sell, including stop-loss adjustments (e.g., to breakeven or a trailing', stop on the remainder).,
+        'VI. Full Exit Strategy (Final Profit-Taking or Loss Mitigation):', '* Conditions for Full Profitable Exit:', '* Define
+          signals that indicate the provided_trading_strategy has run its course or reached its ultimate objective', '(e.g.,
+          exhaustion of trend, achievement of final target, significant counter-signal).', '* Conditions for Full Exit at
+          a Loss:', '* Reiteration of stop-loss execution protocol or other critical conditions that invalidate the trade
+          thesis, necessitating a full exit.', '* Order Types & Execution for Exits:', '* Recommend order types to ensure
+          timely and efficient exit, considering market conditions (liquidity, volatility) and', user_execution_preferences.,
+        '* Considerations for Slippage & Market Impact:', '* Briefly discuss how to minimize adverse slippage, especially
+          for larger positions or less liquid instruments, in line with', user_execution_preferences., 'General Requirements
+          for the Analysis:', 'Depth of Reasoning: Every recommendation must be substantiated with clear, logical reasoning
+          based on established trading principles', and market mechanics., 'Factual & Objective Analysis: Focus on quantifiable
+          aspects and evidence-based practices where possible.', 'Seamless Integration of Inputs: Continuously demonstrate
+          how each element of the execution plan is a direct consequence of the interplay', 'between the provided_trading_strategy,
+          user_risk_attitude, user_investment_period, and user_execution_preferences.', 'Actionability & Precision: The strategies
+          should be described with enough detail to be practically implementable or to inform', the user's own decision-making
+          process., 'Balanced Perspective: Acknowledge potential trade-offs or alternative approaches where relevant, explaining
+          why the recommended path', is preferred given the inputs., '** Legal Disclaimer and User Acknowledgment (MUST be
+          displayed prominently):']
+      output_key: execution_plan_output
+  financial_coordinator:
+    type: instance
+    models: [gemini-2.5-pro]
+    tools: [data_analyst_agent, trading_analyst_agent, execution_analyst_agent, risk_analyst_agent]
+    params:
+      name: financial_coordinator
+      description: guide users through a structured process to receive financial advice by orchestrating a series of expert
+        subagents. help them analyze a market ticker, develop trading strategies, define execution plans, and evaluate the
+        overall risk.
+      instruction: ['Role: Act as a specialized financial advisory assistant.', Your primary goal is to guide users through
+          a structured process to receive financial advice by orchestrating a series of expert subagents., 'You will help
+          them analyze a market ticker, develop trading strategies, define execution plans, and evaluate the overall risk.',
+        'Overall Instructions for Interaction:', 'At the beginning, Introduce yourself to the user first. Say something like:
+          "', Hello! I'm here to help you navigate the world of financial decision-making., My main goal is to provide you
+          with comprehensive financial advice by guiding you through a step-by-step process., 'We''ll work together to analyze
+          market tickers, develop effective trading strategies, define clear execution plans,', and thoroughly evaluate your
+          overall risk., Remember that at each step you can always ask to “show me the detailed result as markdown”., 'Ready
+          to get started?', '"', 'Then show immediately this Disclaimer:', '"Important Disclaimer: For Educational and Informational
+          Purposes Only.', 'The information and trading strategy outlines provided by this tool, including any analysis,',
+        'commentary, or potential scenarios, are generated by an AI model and are for educational and informational purposes
+          only.', 'They do not constitute, and should not be interpreted as, financial advice, investment recommendations,
+          endorsements,', or offers to buy or sell any securities or other financial instruments., 'Google and its affiliates
+          make no representations or warranties of any kind, express or implied, about the completeness,', 'accuracy, reliability,
+          suitability, or availability with respect to the information provided. Any reliance you place', on such information
+          is therefore strictly at your own risk., This is not an offer to buy or sell any security., Investment decisions
+          should not be made based solely on the information provided here., 'Financial markets are subject to risks, and
+          past performance is not indicative of future results.', You should conduct your own thorough research and consult
+          with a qualified independent financial advisor before making any investment decisions., 'By using this tool and
+          reviewing these strategies, you acknowledge that you understand this disclaimer and agree that', Google and its
+          affiliates are not liable for any losses or damages arising from your use of or reliance on this information.",
+        'At each step, clearly inform the user about the current subagent being called and the specific information required
+          from them.', 'After each subagent completes its task, explain the output provided and how it contributes to the
+          overall financial advisory process.', Ensure all state keys are correctly used to pass information between subagents.,
+        Here's the step-by-step breakdown., 'For each step, explicitly call the designated subagent and adhere strictly to
+          the specified input and output formats:', '* Gather Market Data Analysis (Subagent: data_analyst)', 'Input: Prompt
+          the user to provide the market ticker symbol they wish to analyze (e.g., AAPL, GOOGL, MSFT).', 'Action: Call the
+          data_analyst subagent, passing the user-provided market ticker.', 'Expected Output: The data_analyst subagent MUST
+          return a comprehensive data analysis for the specified market ticker.', '* Develop Trading Strategies (Subagent:
+          trading_analyst)', 'Input:', 'Prompt the user to define their risk attitude (e.g., conservative, moderate, aggressive).',
+        'Prompt the user to specify their investment period (e.g., short-term, medium-term, long-term).', 'Action: Call the
+          trading_analyst subagent, providing:', The market_data_analysis_output (from state key)., The user-selected risk
+          attitude., The user-selected investment period., 'Expected Output: The trading_analyst subagent MUST generate one
+          or more potential trading strategies tailored to the provided market analysis,', 'risk attitude, and investment
+          period.', Output the generated extended version by visualizing the results as markdown, '* Define Optimal Execution
+          Strategy (Subagent: execution_analyst)', 'Input:', The proposed_trading_strategies_output (from state key)., The
+          user's risk attitude (previously provided)., The user's investment period (previously provided)., 'You may also
+          need to ask the user if they have preferences for execution, such as preferred brokers or order types,', if the
+          subagent can utilize this information., 'Action: Call the execution_analyst subagent, providing:', The proposed_trading_strategies_output
+          (from state key).., The user's risk attitude., The user's investment period., '(Optional: User''s execution preferences).',
+        'Expected Output: The execution_analyst subagent MUST generate a detailed execution plan for the selected trading
+          strategy (or strategies).', 'This plan should consider factors like order types, timing, and potential cost implications,',
+        aligned with the user's risk profile and the market_data_analysis., Output the generated extended version by visualizing
+          the results as markdown, '* Evaluate Overall Risk Profile (Subagent: risk_analyst)', 'Input:', The market_data_analysis_output
+          (from state key)., The proposed_trading_strategies_output (from state key)., The execution_plan_output (from state
+          key)., The user's stated risk attitude., The user's stated investment period., 'Action: Call the risk_analyst subagent,
+          providing all the listed inputs.', 'Expected Output: The risk_analyst subagent MUST provide a comprehensive evaluation
+          of the overall risk associated with the proposed financial plan', '(data, strategies, and execution). This evaluation
+          should highlight consistency with the user''s stated risk attitude and investment horizon,', and point out any potential
+          misalignments or concentrated risks., Output the generated extended version by visualizing the results as markdown]
+      output_key: financial_coordinator_output
+  risk_analyst_agent:
+    type: instance
+    models: [gemini-2.5-pro]
+    params:
+      name: risk_analyst_agent
+      instruction: ['Objective: Generate a detailed and reasoned risk analysis for the provided trading strategy and execution
+          strategy.', 'This analysis must be meticulously tailored to the user''s specified risk attitude, investment period,
+          and execution preferences.', 'The output must be rich in factual analysis, clearly explaining all identified risks
+          and proposing specific, actionable mitigation strategies.', '* Given Inputs (These will be strictly provided; do
+          not solicit further input from the user):', 'provided_trading_strategy: The user-defined trading strategy that forms
+          the basis of this risk analysis', '(e.g., "Long-only swing trading on QQQ based on breakouts from consolidation
+          patterns after oversold RSI signals,"', 'Mean reversion strategy for WTI Crude Oil futures using Bollinger Bands
+          on H1 timeframe,"', '"Dollar-cost averaging into VOO ETF for long-term holding").', 'provided_execution_strategy:
+          The specific execution strategy provided by the execution agent or detailing how', 'the provided_trading_strategy
+          will be implemented in the market (e.g., "Execute QQQ trades using limit orders placed 0.5% below breakout level,',
+        'with an initial stop-loss at the pattern''s low and a take-profit target at 2x risk; orders managed via Broker X''s
+          API,"', '"Enter WTI futures positions with market orders upon Bollinger Band cross, with a 1.5 ATR stop-loss and
+          a target at the mean").', 'user_risk_attitude: The user''s defined risk tolerance (e.g., Very Conservative, Conservative,
+          Balanced, Aggressive, Very Aggressive).', 'This influences acceptable volatility, drawdown tolerance, stop-loss
+          settings, order aggressiveness, and scaling decisions.', 'user_investment_period: The user''s defined investment
+          horizon (e.g., Intraday, Short-term (days to weeks), Medium-term (weeks to months),', 'Long-term (months to years)).
+          This impacts timeframe relevance, review frequency, and sensitivity to market noise versus trends.', 'user_execution_preferences:
+          User-defined preferences regarding execution (e.g., Preferred broker(s)', '[noting implications for order types/commissions
+          like ''Broker Y, prefers their ''Smart Order Router'' for US equities''], preference for limit orders over market
+          orders [''Always use limit orders unless it''s a fast market exit''], desire for low latency vs. cost optimization
+          [''Cost optimization is prioritized over ultra-low latency''], specific order algorithms like TWAP/VWAP if available
+          and relevant [''Utilize VWAP for entries larger than 5% of average daily volume if supported by broker'']).', '*
+          Requested Output Structure: Comprehensive Risk Analysis Report', 'The analysis must cover, but is not limited to,
+          the following sections. Ensure each section directly references and integrates', 'the provided inputs:', '* Executive
+          Summary of Risks:', 'Brief overview of the most critical risks identified for the combined trading and execution
+          strategies, specifically contextualized', 'by the user''s profile (user_risk_attitude, user_investment_period).',
+        'An overall qualitative risk assessment level (e.g., Low, Medium, High, Very High) for the proposed plan, given the
+          user''s profile.', 'Market Risks:', '* Identification: Detail specific market risks (e.g., directional risk, volatility
+          risk, gap risk, interest rate sensitivity,', 'inflation impact, currency risk if applicable, correlation breakdown)
+          directly pertinent to the provided_trading_strategy and', the assets involved., '* Assessment: Analyze the potential
+          impact (e.g., financial loss, performance drag) of these risks. Where possible, relate this to', 'the user_risk_attitude
+          (e.g., "An aggressive investor might tolerate higher volatility, but the strategy''s exposure to sudden market',
+        'reversals could still exceed a 20% drawdown, which might be a threshold even for them"). Consider the user_investment_period',
+        '(e.g., "Short-term volatility is less critical for a long-term investor unless it triggers margin calls or forces
+          premature liquidation").', '* Mitigation: Propose specific, actionable mitigation strategies (e.g., defined stop-loss
+          levels and types [static, trailing],', 'position sizing rules [e.g., fixed fractional, Kelly criterion variant],
+          hedging techniques relevant to the strategy,', 'diversification across uncorrelated assets if applicable, adjustments
+          based on VIX levels). Ensure these are compatible with', user_execution_preferences., 'EXAMPLES, you can provide
+          others:', '* Liquidity Risks:', 'Identification: Assess risks associated with the ability to enter/exit positions
+          at desired prices for the assets specified in the', 'provided_trading_strategy, considering their typical trading
+          volumes, bid-ask spreads, and potential market stress scenarios.', 'Assessment: Analyze the impact of low liquidity
+          (e.g., increased slippage costs, inability to execute trades promptly or at all,', 'wider spreads impacting profitability),
+          particularly in relation to the provided_execution_strategy', '(e.g., "Using market orders for an illiquid altcoin
+          could lead to significant slippage") and user_execution_preferences.', 'Mitigation: Suggest mitigation tactics (e.g.,
+          using limit orders with appropriate patience, breaking down large orders', '[consider TWAP/VWAP if in preferences],
+          trading only during peak liquidity hours for the specific asset,', 'choice of exchange/broker known for better liquidity
+          in those assets, avoiding altogether assets with critically low liquidity).', '* Counterparty & Platform Risks:',
+        'Identification: Identify risks associated with the chosen or implied broker(s) (from user_execution_preferences or
+          inherent in', 'provided_execution_strategy), exchanges, or any third-party platforms essential for the strategy
+          (e.g., broker insolvency,', 'platform outages/instability, API failures, data feed inaccuracies, cybersecurity breaches).',
+        'Assessment: Evaluate the potential impact (e.g., loss of funds, inability to manage positions, incorrect trading
+          decisions based', on faulty data)., 'Mitigation: Suggest measures like selecting well-regulated and financially
+          stable brokers, understanding account insurance schemes', '(e.g., SIPC, FSCS), enabling two-factor authentication,
+          using API keys with restricted permissions, having backup brokers or platforms', 'if feasible, and regularly reviewing
+          platform status pages.', '*Operational & Technological Risks:', 'Identification: Detail risks related to the practical
+          execution process beyond platform failure (e.g., personal internet/power outages,', 'human error in manual or semi-automated
+          execution, misinterpretation of signals, failure to follow the plan, incorrect parameter settings', for automated
+          components)., 'Assessment: Analyze potential impact on trade execution accuracy, timeliness, and overall strategy
+          adherence.', 'Mitigation: Propose safeguards (e.g., redundant internet/power solutions for active traders, using
+          trade execution checklists,', 'detailed and clear trading plan documentation, order execution confirmations, alerts
+          for key events, regular review of trade logs against', 'the plan, stress-testing any automated components).', '*
+          Strategy-Specific & Model Risks:', 'Identification: Pinpoint risks inherent to the logic and assumptions of the
+          provided_trading_strategy and provided_execution_strategy', '(e.g., model decay/concept drift for quantitative strategies,
+          overfitting to historical data, risk of being caught in whipsaws for', 'trend-following systems in ranging markets,
+          unexpected early assignment for options strategies, concentration risk in few assets/sectors,', risk of indicator
+          divergence or failure)., 'Assessment: Evaluate how these intrinsic risks could manifest, their potential impact
+          on performance, and how sensitive they are to changing', 'market regimes. Relate this to user_risk_attitude (e.g.,
+          "A strategy prone to deep drawdowns during black swan events may be unsuitable', for a conservative user")., 'Mitigation:
+          Suggest strategy-level adjustments (e.g., dynamic position sizing, regime filters, out-of-sample testing for models),
+          robust monitoring conditions (e.g., tracking performance against a benchmark, drawdown limits per trade/period),
+          diversification of strategy parameters or complementary strategies, and a plan for periodic review and re-validation
+          of the strategy.', '* Psychological Risks for the Trader:', 'Identification: Based on the user_risk_attitude, strategy
+          intensity (e.g., high-frequency intraday vs. long-term passive), and potential', 'for drawdowns, identify common
+          psychological pitfalls (e.g., fear of missing out (FOMO), revenge trading, confirmation bias,', 'overconfidence
+          after a winning streak, difficulty adhering to the plan during losing streaks, emotional decision-making).', 'Assessment:
+          Discuss how these behavioral biases could directly undermine the disciplined execution of the provided_trading_strategy
+          and', provided_execution_strategy., 'Mitigation: Recommend actionable practices such as maintaining a detailed trading
+          journal (including emotional state),', 'setting realistic performance expectations, defining and respecting a maximum
+          daily/weekly loss limit, taking regular breaks,', 'pre-defining responses to various market scenarios, and employing
+          techniques to ensure adherence to the trading plan.', '*Overall Alignment with User Profile & Concluding Remarks:',
+        'Conclude with an explicit discussion summarizing how the overall risk profile of the combined strategies, taking
+          into account all identified', 'risks and proposed mitigations, aligns (or misaligns) with the user_risk_attitude,
+          user_investment_period, and user_execution_preferences.', 'Highlight any significant residual risks or potential
+          areas where the strategy might conflict with the user''s profile,', even with mitigations in place., Provide critical
+          considerations or trade-offs the user must accept if they proceed with this plan., '** Legal Disclaimer and User
+          Acknowledgment (MUST be displayed prominently):']
+      output_key: final_risk_assessment_output
+  root_agent.0:
+    type: instance
+    models: [BQML_AGENT_MODEL]
+    tools: [bq_execute_sql, check_bq_models, call_db_agent, rag_response]
+    params:
+      name: bq_ml_agent
+      instruction: return_instructions_bqml()
+      before_agent_callback: setup_before_agent_call
+      instance: root_agent
+  root_agent.1:
+    type: instance
+    models: [gemini-2.5-flash]
+    tools: [call_analytics_agent]
+    params:
+      name: data_science_root_agent
+      instruction: ''
+      global_instruction: [You are a Data Science and Data Analytics Multi Agent System., 'Todays date: {date.today}']
+      before_agent_callback: load_database_settings_in_context
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "0.01"
+      function: get_root_agent
+      sub_agents: [sub_agents]
+      instance: root_agent
+  root_agent.2:
+    type: instance
+    models: [get_model]
+    tools: [get_available_strategies, get_market_data_summary, save_session_state, load_session_state, call_strategy_analysis_agent,
+      call_backtesting_execution_agent, call_performance_evaluation_agent, call_risk_assessment_agent, call_optimization_agent]
+    params:
+      name: trading_backtester_coordinator
+      instruction: get_root_coordinator_prompt()
+      global_instruction: [You are the Root Coordinator for an intelligent trading strategy backtesting system., 'Today''s
+          date: {date.today}', 'Integration Details:', '- ai_trader framework with 20+ trading strategies available', '- Supports
+          US stocks, Taiwan stocks, and cryptocurrencies', '- Built on Backtrader framework with comprehensive analytics',
+        '- Default cash: ${config.get}', '- Default commission: {config.get}', 'Your goal is to provide intelligent, comprehensive
+          backtesting analysis through coordinated multi-agent workflows.']
+      before_agent_callback: load_config_in_context
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "0.1"
+        top_p: "0.9"
+        top_k: "40"
+      function: get_root_coordinator_agent
+      instance: root_agent
+  trading_analyst_agent:
+    type: instance
+    models: [gemini-2.5-pro]
+    params:
+      name: trading_analyst_agent
+      instruction: ['Develop Tailored Trading Strategies (Subagent: trading_analyst)', '* Overall Goal for trading_analyst:',
+        To conceptualize and outline at least five distinct trading strategies by critically evaluating the comprehensive
+          market_data_analysis_output., Each strategy must be specifically tailored to align with the user's stated risk attitude
+          and their intended investment period., '* Inputs (to trading_analyst):', '** User Risk Attitude (user_risk_attitude):',
+        'Action: Prompt the user to define their risk attitude.', 'Guidance to User: "To help me tailor trading strategies,
+          could you please describe your general attitude towards investment risk?', 'For example, are you ''conservative''
+          (prioritize capital preservation, lower returns), ''moderate'' (balanced approach to risk and return),', 'or ''aggressive''
+          (willing to take on higher risk for potentially higher returns)?"', 'Storage: The user''s response will be captured
+          and used as user_risk_attitude.', 'User Investment Period (user_investment_period):', 'Action: Prompt the user to
+          specify their investment period.', 'Guidance to User: "What is your intended investment timeframe for these potential
+          strategies? For instance,', 'are you thinking ''short-term'' (e.g., up to 1 year), ''medium-term'' (e.g., 1 to 3
+          years), or ''long-term'' (e.g., 3+ years)?"', 'Storage: The user''s response will be captured and used as user_investment_period.',
+        'Market Analysis Data (from state):', '* Required State Key: market_data_analysis_output.', 'Action: The trading_analyst
+          subagent MUST attempt to retrieve the analysis data from the market_data_analysis_output state key.', 'Critical
+          Prerequisite Check & Error Handling:', 'Condition: If the market_data_analysis_output state key is empty, null,
+          or otherwise indicates that the data is not available.', 'Action:', Halt the current trading strategy generation
+          process immediately., Raise an exception or signal an error internally., 'Inform the user clearly: "Error: The foundational
+          market analysis data (from market_data_analysis_output) is missing or incomplete.', 'This data is essential for
+          generating trading strategies. Please ensure the ''Market Data Analysis'' step,', 'typically handled by the data_analyst
+          agent, has been successfully run before proceeding. You may need to execute that step first."', Do not proceed until
+          this prerequisite is met., '* Core Action (Logic of trading_analyst):', 'Upon successful retrieval of all inputs
+          (user_risk_attitude, user_investment_period, and valid market_data_analysis_output),', 'the trading_analyst will:',
+        '** Analyze Inputs: Thoroughly examine the market_data_analysis_output (which includes financial health, trends, sentiment,
+          risks, etc.)', in the specific context of the user_risk_attitude and user_investment_period., '** Strategy Formulation:
+          Develop a minimum of five distinct potential trading strategies. These strategies should be diverse and reflect',
+        'different plausible interpretations or approaches based on the input data and user profile. Considerations for each
+          strategy include:', 'Alignment with Market Analysis: How the strategy leverages specific findings (e.g., undervalued
+          asset, strong momentum, high volatility,', specific sector trends) from the market_data_analysis_output., '** Risk
+          Profile Matching: Ensuring conservative strategies involve lower-risk approaches, while aggressive strategies might
+          explore', higher potential reward scenarios (with commensurate risk)., '** Time Horizon Suitability: Matching strategy
+          mechanics to the investment period (e.g., long-term value investing vs. short-term swing trading).', '** Scenario
+          Diversity: Aim to cover a range of potential market outlooks if supported by the analysis', '(e.g., strategies for
+          bullish, bearish, or neutral/range-bound conditions).', '* Expected Output (from trading_analyst):', '** Content:
+          A collection containing five or more detailed potential trading strategies.', '** Structure for Each Strategy: Each
+          individual trading strategy within the collection MUST be clearly articulated and include at least the', 'following
+          components:', '***  strategy_name: A concise and descriptive name (e.g., "Conservative Dividend Growth Focus," "Aggressive
+          Tech Momentum Play,"', '"Medium-Term Sector Rotation Strategy").', '*** description_rationale: A paragraph explaining
+          the core idea of the strategy and why it''s being proposed based on the confluence of the', market analysis and
+          the user's profile., '** alignment_with_user_profile: Specific notes on how this strategy aligns with the user_risk_attitude',
+        '(e.g., "Suitable for aggressive investors due to...") and user_investment_period (e.g., "Designed for a long-term
+          outlook of 3+ years...").', '** key_market_indicators_to_watch: A few general market or company-specific indicators
+          from the market_data_analysis_output that are', 'particularly relevant to this strategy (e.g., "P/E ratio below
+          industry average," "Sustained revenue growth above X%,"', '"Breaking key resistance levels").', '** potential_entry_conditions:
+          General conditions or criteria that might signal a potential entry point', '(e.g., "Consider entry after a confirmed
+          breakout above [key level] with increased volume,"', '"Entry upon a pullback to the 50-day moving average if broader
+          market sentiment is positive").', '** potential_exit_conditions_or_targets: General conditions for taking profits
+          or cutting losses', '(e.g., "Target a 20% return or re-evaluate if price drops 10% below entry," "Exit if fundamental
+          conditions A or B deteriorate").', '** primary_risks_specific_to_this_strategy: Key risks specifically associated
+          with this strategy,', 'beyond general market risks (e.g., "High sector concentration risk," "Earnings announcement
+          volatility,"', '"Risk of rapid sentiment shift for momentum stocks").', '** Storage: This collection of trading
+          strategies MUST be stored in a new state key, for example: proposed_trading_strategies.', '* User Notification &
+          Disclaimer Presentation: After generation, the agent MUST present the following to the user:', '** Introduction
+          to Strategies: "Based on the market analysis and your preferences, I have formulated [Number] potential', trading
+          strategy outlines for your consideration.", '** Legal Disclaimer and User Acknowledgment (MUST be displayed prominently):']
+      output_key: proposed_trading_strategies_output
+
+models:
+  ALLOYDB_AGENT_MODEL:
+    type: literal
+    agents: [alloydb_agent]
+  ANALYTICS_AGENT_MODEL:
+    type: literal
+    agents: [analytics_agent]
+  BIGQUERY_AGENT_MODEL:
+    type: literal
+    agents: [bigquery_agent]
+  BQML_AGENT_MODEL:
+    type: literal
+    agents: [root_agent.0]
+  gemini-2.5-flash:
+    type: literal
+    agents: [root_agent.1]
+  gemini-2.5-pro:
+    type: literal
+    agents: [financial_coordinator, trading_analyst_agent, data_analyst_agent, execution_analyst_agent, risk_analyst_agent]
+  get_model:
+    type: function
+    agents: [root_agent.2]
+    params:
+      wrapper: get_model
+      arg_0: root_agent
+
+tools:
+  agent_tool:
+    type: agent
+    agents: [strategy_analysis_agent]
+    params:
+      wrapper: AgentTool
+      agent: strategy_analysis_agent
+  agent_tool.1:
+    type: agent
+    agents: [backtesting_execution_agent]
+    params:
+      wrapper: AgentTool
+      agent: backtesting_execution_agent
+  agent_tool.2:
+    type: agent
+    agents: [performance_evaluation_agent]
+    params:
+      wrapper: AgentTool
+      agent: performance_evaluation_agent
+  agent_tool.3:
+    type: agent
+    agents: [risk_assessment_agent]
+    params:
+      wrapper: AgentTool
+      agent: risk_assessment_agent
+  agent_tool.4:
+    type: agent
+    agents: [optimization_agent]
+    params:
+      wrapper: AgentTool
+      agent: optimization_agent
+  agent_tool.5:
+    type: agent
+    agents: [bigquery_agent]
+    params:
+      wrapper: AgentTool
+      agent: bigquery_agent
+  agent_tool.6:
+    type: agent
+    agents: [bigquery_agent]
+    params:
+      wrapper: AgentTool
+      agent: bigquery_agent
+  agent_tool.7:
+    type: agent
+    agents: [alloydb_agent]
+    params:
+      wrapper: AgentTool
+      agent: alloydb_agent
+  agent_tool.8:
+    type: agent
+    agents: [analytics_agent]
+    params:
+      wrapper: AgentTool
+      agent: analytics_agent
+  alloydb_nl2sql:
+    type: function
+    agents: [alloydb_agent]
+    params:
+      module: tools.alloydb_nl2sql
+      description: |-
+        Generates an initial SQL query from a natural language question.
+
+        Args:
+            question (str): Natural language question.
+            tool_context (ToolContext): The tool context to use for generating the
+              SQL query.
+
+        Returns:
+            str: An SQL statement to answer this question.
+  bigquery_toolset:
+    type: function
+    agents: [bigquery_agent]
+  bq_execute_sql:
+    type: function
+    agents: [root_agent.0]
+  call_analytics_agent:
+    type: function
+    agents: [root_agent.1]
+    params:
+      description: |-
+        This tool can generate Python code to process and analyze a dataset.
+
+        Some of the tasks it can do in Python include:
+        * Creating graphics for data visualization;
+        * Processing or filtering existing datasets;
+        * Combining datasets to create a joined dataset for further analysis.
+
+        The Python modules available to it are:
+        * io
+        * math
+        * re
+        * matplotlib.pyplot
+        * numpy
+        * pandas
+
+        The tool DOES NOT have the ability to retrieve additional data from
+        a database. Only the data already retrieved will be analyzed.
+
+        Args:
+            question (str): Natural language question or analytics request.
+            tool_context (ToolContext): The tool context to use for generating the
+                SQL query.
+
+        Returns:
+            Response from the analytics agent.
+  call_backtesting_execution_agent:
+    type: function
+    agents: [root_agent.2]
+    params:
+      description: |-
+        Call the Backtesting Execution Agent to run backtests.
+
+        Args:
+            request: Natural language request for backtesting
+            strategy_name: Name of strategy to backtest (optional)
+            parameters: Strategy parameters (optional)
+            tool_context: Tool context for state management
+
+        Returns:
+            Backtesting execution results
+  call_db_agent:
+    type: function
+    agents: [root_agent.0]
+    params:
+      description: Tool to call database (nl2sql) agent.
+  call_optimization_agent:
+    type: function
+    agents: [root_agent.2]
+    params:
+      description: |-
+        Call the Optimization Agent for strategy and parameter optimization.
+
+        Args:
+            request: Natural language request for optimization
+            optimization_type: Type of optimization ('parameters', 'ensemble', 'walkforward')
+            tool_context: Tool context for state management
+
+        Returns:
+            Optimization results and recommendations
+  call_performance_evaluation_agent:
+    type: function
+    agents: [root_agent.2]
+    params:
+      description: |-
+        Call the Performance Evaluation Agent to analyze backtest results.
+
+        Args:
+            request: Natural language request for performance evaluation
+            tool_context: Tool context for state management
+
+        Returns:
+            Performance evaluation and insights
+  call_risk_assessment_agent:
+    type: function
+    agents: [root_agent.2]
+    params:
+      description: |-
+        Call the Risk Assessment Agent to analyze risk metrics.
+
+        Args:
+            request: Natural language request for risk assessment
+            tool_context: Tool context for state management
+
+        Returns:
+            Risk assessment and recommendations
+  call_strategy_analysis_agent:
+    type: function
+    agents: [root_agent.2]
+    params:
+      description: |-
+        Call the Strategy Analysis Agent to analyze market conditions and recommend strategies.
+
+        Args:
+            request: Natural language request for strategy analysis
+            market_symbol: Stock symbol to analyze (optional)
+            time_period: Time period for analysis ('1y', '2y', '5y')
+            tool_context: Tool context for state management
+
+        Returns:
+            Strategy analysis and recommendations
+  check_bq_models:
+    type: function
+    agents: [root_agent.0]
+  data_analyst_agent:
+    type: agent
+    agents: [financial_coordinator]
+    params:
+      wrapper: AgentTool
+      agent: data_analyst_agent
+  execution_analyst_agent:
+    type: agent
+    agents: [financial_coordinator]
+    params:
+      wrapper: AgentTool
+      agent: execution_analyst_agent
+  get_available_strategies:
+    type: function
+    agents: [root_agent.2]
+    params:
+      description: |-
+        Get all available trading strategies from ai_trader.
+
+        Returns:
+            Dictionary mapping strategy names to their metadata
+  get_market_data_summary:
+    type: function
+    agents: [root_agent.2]
+    params:
+      description: |-
+        Get a quick summary of market data for a symbol.
+
+        Args:
+            symbol: Stock symbol (e.g., 'AAPL', 'MSFT')
+            period: Time period ('1y', '2y', '5y', 'max')
+            tool_context: Tool context for state management
+
+        Returns:
+            JSON string with market data summary
+  google_search:
+    type: module
+    agents: [data_analyst_agent]
+  load_session_state:
+    type: function
+    agents: [root_agent.2]
+    params:
+      description: |-
+        Load session state from file.
+
+        Args:
+            session_name: Name of the session to load
+            tool_context: Tool context to restore state into
+
+        Returns:
+            JSON string with load status
+  rag_response:
+    type: function
+    agents: [root_agent.0]
+  risk_analyst_agent:
+    type: agent
+    agents: [financial_coordinator]
+    params:
+      wrapper: AgentTool
+      agent: risk_analyst_agent
+  run_alloydb_query:
+    type: function
+    agents: [alloydb_agent]
+    params:
+      module: tools.run_alloydb_query
+      description: |-
+        Runs an AlloyDB SQL query.
+
+        This function validates the provided SQL string, then runs it against
+        AlloyDB and returns the results.
+
+        It performs the following steps:
+
+        1. **SQL Cleanup:**  Preprocesses the SQL string using a `cleanup_sql`
+        function
+        2. **DML/DDL Restriction:**  Rejects any SQL queries containing DML or DDL
+           statements (e.g., UPDATE, DELETE, INSERT, CREATE, ALTER) to ensure
+           read-only operations.
+        3. **Syntax and Execution:** Sends the cleaned SQL to BigQuery for
+           execution and retrieves the results.
+
+        Args:
+            sql_string (str): The SQL query string to validate.
+            tool_context (ToolContext): The tool context to use for validation.
+
+        Returns:
+            A dict with two keys:
+                query_results (list): A list of {key, value} dicts for each element
+                    in the result set.
+                error_message (str): A message indicating the query outcome.
+                    This includes:
+                      - "Valid SQL. Results: ..." if the query is valid and returns
+                        data.
+                      - "Query executed successfully (no results)." if
+                        the query is valid but returns no data.
+                      - "Invalid SQL: ..." if the query is invalid, along with the
+                        error message from BigQuery.
+                      - "Query error: ..." if another error occurs, including any
+                      error message.
+  save_session_state:
+    type: function
+    agents: [root_agent.2]
+    params:
+      description: |-
+        Save current session state to file.
+
+        Args:
+            session_name: Name for the saved session
+            tool_context: Tool context containing state to save
+
+        Returns:
+            JSON string with save status
+  trading_analyst_agent:
+    type: agent
+    agents: [financial_coordinator]
+    params:
+      wrapper: AgentTool
+      agent: trading_analyst_agent
+  VertexAiCodeExecutor:
+    type: module
+    params:
+      class: VertexAiCodeExecutor
+
+teams:
+  agent:
+    type: hierarchy
+    agents: [agent, sub_agents]
+
+imports:
+  _get_available_strategies: core.utils.get_available_strategies
+  ABC: abc.ABC
+  abstractmethod: abc.abstractmethod
+  AdaptiveRSI: ai_trader.backtesting.strategies.indicators.AdaptiveRSI
+  AdaptiveRSIStrategy: ai_trader.backtesting.strategies.classic.adaptive_rsi.AdaptiveRSIStrategy
+  AdkApp: vertexai.preview.reasoning_engines.AdkApp
+  agent: agent
+  Agent: google.adk.Agent
+  agent_engines: vertexai.agent_engines
+  AgentTool: google.adk.tools.agent_tool.AgentTool
+  aiplatform: google.cloud.aiplatform
+  alloydb_agent: sub_agents.alloydb_agent
+  AlphaRSIPro: ai_trader.backtesting.strategies.indicators.AlphaRSIPro
+  AlphaRSIProStrategy: ai_trader.backtesting.strategies.classic.alpharsi_pro.AlphaRSIProStrategy
+  analytics_agent: sub_agents.analytics_agent
+  Any: typing.Any
+  app: absl.app
+  as_completed: concurrent.futures.as_completed
+  auth: google.auth
+  auth_methods: toolbox_core.auth_methods
+  AverageVolatility: ai_trader.backtesting.strategies.indicators.AverageVolatility
+  backtesting_execution_agent: sub_agents.backtesting_execution.backtesting_execution_agent
+  base64: base64
+  base_fetcher: ai_trader.data.fetchers.base
+  BaseStrategy: ai_trader.backtesting.strategies.base.BaseStrategy
+  BaseTool: google.adk.tools.BaseTool
+  BBandsStrategy: ai_trader.backtesting.strategies.classic.bbands.BBandsStrategy
+  bigquery: google.cloud.bigquery
+  bigquery_agent: sub_agents.bigquery_agent
+  BigQueryToolConfig: google.adk.tools.bigquery.config.BigQueryToolConfig
+  BigQueryToolset: google.adk.tools.bigquery.BigQueryToolset
+  bqml_agent: bqml.agent.root_agent
+  bt: backtrader
+  BuyHoldStrategy: ai_trader.backtesting.strategies.classic.buyhold.BuyHoldStrategy
+  caching: vertexai.preview.caching
+  call_alloydb_agent: tools.call_alloydb_agent
+  call_analytics_agent: tools.call_analytics_agent
+  call_backtesting_execution_agent: tools.call_backtesting_execution_agent
+  call_bigquery_agent: tools.call_bigquery_agent
+  call_optimization_agent: tools.call_optimization_agent
+  call_performance_evaluation_agent: tools.call_performance_evaluation_agent
+  call_risk_assessment_agent: tools.call_risk_assessment_agent
+  call_strategy_analysis_agent: tools.call_strategy_analysis_agent
+  Callable: typing.Callable
+  CallbackContext: google.adk.agents.callback_context.CallbackContext
+  chase_constants: chase_sql.chase_constants
+  chase_db_tools: chase_sql.chase_db_tools
+  check_bq_models: data_science.sub_agents.bqml.tools.check_bq_models
+  classic: ai_trader.backtesting.strategies.classic
+  Client: google.genai.Client
+  config: core.config.config
+  CORRECTION_PROMPT_TEMPLATE_V1_0: correction_prompt_template.CORRECTION_PROMPT_TEMPLATE_V1_0
+  CrossSMAStrategy: ai_trader.backtesting.strategies.classic.sma.CrossSMAStrategy
+  data_analyst_agent: sub_agents.data_analyst.data_analyst_agent
+  DataValidationError: ai_trader.core.exceptions.DataValidationError
+  date: datetime.date
+  datetime: datetime.datetime
+  DC_PROMPT_TEMPLATE: dc_prompt_template.DC_PROMPT_TEMPLATE
+  Dict: typing.Dict
+  DiffHighLow: ai_trader.backtesting.strategies.indicators.DiffHighLow
+  dotenv: dotenv
+  DoubleTop: ai_trader.backtesting.strategies.indicators.DoubleTop
+  DoubleTopStrategy: ai_trader.backtesting.strategies.classic.double_top.DoubleTopStrategy
+  enum: enum
+  execution_analyst_agent: agent.execution_analyst_agent
+  Extension: vertexai.preview.extensions.Extension
+  extract_ticker_from_path: ai_trader.core.utils.extract_ticker_from_path
+  Final: typing.Final
+  flags: absl.flags
+  functools: functools
+  GeminiModel: llm_utils.GeminiModel
+  GenerationConfig: vertexai.generative_models.GenerationConfig
+  GenerativeModel: vertexai.preview.generative_models.GenerativeModel
+  get_alloydb_database_settings: sub_agents.alloydb.tools.get_database_settings
+  get_available_strategies: tools.get_available_strategies
+  get_bigquery_client: google.adk.tools.bigquery.client.get_bigquery_client
+  get_bq_database_settings: data_science.sub_agents.bigquery.tools.get_database_settings
+  get_env_var: data_science.utils.utils.get_env_var
+  get_logger: ai_trader.core.logging.get_logger
+  get_market_data_summary: tools.get_market_data_summary
+  get_root_coordinator_prompt: prompts.get_root_coordinator_prompt
+  glob: glob
+  google_exceptions: google.api_core.exceptions
+  google_search: google.adk.tools.google_search
+  HarmBlockThreshold: vertexai.generative_models.HarmBlockThreshold
+  HarmCategory: vertexai.generative_models.HarmCategory
+  HttpOptions: google.genai.types.HttpOptions
+  HybridAlphaRSI: ai_trader.backtesting.strategies.indicators.HybridAlphaRSI
+  HybridAlphaRSIStrategy: ai_trader.backtesting.strategies.classic.hybrid_alpharsi.HybridAlphaRSIStrategy
+  inspect: inspect
+  itertools: itertools
+  json: json
+  List: typing.List
+  Literal: typing.Literal
+  LlmAgent: google.adk.agents.LlmAgent
+  load_dotenv: dotenv.load_dotenv
+  load_example: ai_trader.data.fetchers.base.load_example
+  load_session_state: tools.load_session_state
+  logging: logging
+  MACDStrategy: ai_trader.backtesting.strategies.classic.macd.MACDStrategy
+  MomentumStrategy: ai_trader.backtesting.strategies.classic.momentum.MomentumStrategy
+  MultiBBandsRotationStrategy: ai_trader.backtesting.strategies.portfolio.multi_bbands.MultiBBandsRotationStrategy
+  NaiveROCStrategy: ai_trader.backtesting.strategies.classic.roc.NaiveROCStrategy
+  NaiveSMAStrategy: ai_trader.backtesting.strategies.classic.sma.NaiveSMAStrategy
+  np: numpy
+  optimization_agent: sub_agents.optimization.optimization_agent
+  optimizer: sqlglot.optimizer
+  Optional: typing.Optional
+  os: os
+  OTLPSpanExporter: opentelemetry.exporter.otlp.proto.http.trace_exporter.OTLPSpanExporter
+  Path: pathlib.Path
+  pd: pandas
+  performance_evaluation_agent: sub_agents.performance_evaluation.performance_evaluation_agent
+  portfolio: ai_trader.backtesting.strategies.portfolio
+  prompt: prompt
+  QP_PROMPT_TEMPLATE: qp_prompt_template.QP_PROMPT_TEMPLATE
+  rag_response: data_science.sub_agents.bqml.tools.rag_response
+  random: random
+  re: re
+  RecentHigh: ai_trader.backtesting.strategies.indicators.RecentHigh
+  regex: regex
+  return_instructions_alloydb: prompts.return_instructions_alloydb
+  return_instructions_analytics: prompts.return_instructions_analytics
+  return_instructions_bigquery: prompts.return_instructions_bigquery
+  return_instructions_bqml: prompts.return_instructions_bqml
+  return_instructions_root: prompts.return_instructions_root
+  risk_analyst_agent: sub_agents.risk_analyst.risk_analyst_agent
+  risk_assessment_agent: sub_agents.risk_assessment.risk_assessment_agent
+  RiskAverseStrategy: ai_trader.backtesting.strategies.classic.risk_averse.RiskAverseStrategy
+  ROCMAStrategy: ai_trader.backtesting.strategies.classic.roc.ROCMAStrategy
+  ROCRotationStrategy: ai_trader.backtesting.strategies.portfolio.roc_rotation.ROCRotationStrategy
+  ROCStochStrategy: ai_trader.backtesting.strategies.classic.roc.ROCStochStrategy
+  root_agent: agent.root_agent
+  RsiBollingerBandsStrategy: ai_trader.backtesting.strategies.classic.rsi.RsiBollingerBandsStrategy
+  RSRS: ai_trader.backtesting.strategies.indicators.RSRS
+  RSRSRotationStrategy: ai_trader.backtesting.strategies.portfolio.rsrs_rotation.RSRSRotationStrategy
+  RSRSStrategy: ai_trader.backtesting.strategies.classic.rsrs.RSRSStrategy
+  run_backtest: ai_trader.utils.backtest.run_backtest
+  save_session_state: tools.save_session_state
+  SimpleSpanProcessor: opentelemetry.sdk.trace.export.SimpleSpanProcessor
+  sm: statsmodels.api
+  sql_translator: sql_postprocessor.sql_translator
+  sqlglot: sqlglot
+  storage: google.cloud.storage
+  strategy_analysis_agent: sub_agents.strategy_analysis.strategy_analysis_agent
+  sys: sys
+  ThreadPoolExecutor: concurrent.futures.ThreadPoolExecutor
+  time: time
+  timedelta: datetime.timedelta
+  ToolboxSyncClient: toolbox_core.ToolboxSyncClient
+  ToolContext: google.adk.tools.ToolContext
+  tools: tools
+  trace: opentelemetry.trace
+  trace_sdk: opentelemetry.sdk.trace
+  trading_analyst_agent: agent.trading_analyst_agent
+  TripleRSI: ai_trader.backtesting.strategies.indicators.TripleRSI
+  TripleRSIRotationStrategy: ai_trader.backtesting.strategies.portfolio.triple_rsi.TripleRSIRotationStrategy
+  TripleRsiStrategy: ai_trader.backtesting.strategies.classic.rsi.TripleRsiStrategy
+  TurtleTradingStrategy: ai_trader.backtesting.strategies.classic.turtle.TurtleTradingStrategy
+  Type: typing.Type
+  types: google.genai.types
+  Union: typing.Union
+  USER_AGENT: utils.utils.USER_AGENT
+  VCPPattern: ai_trader.backtesting.strategies.indicators.VCPPattern
+  VCPStrategy: ai_trader.backtesting.strategies.classic.vcp.VCPStrategy
+  vertexai: vertexai
+  VertexAiCodeExecutor: google.adk.code_executors.VertexAiCodeExecutor
+  WriteMode: google.adk.tools.bigquery.config.WriteMode
+  yaml: yaml
+
+functions:
+  __init__:
+    type: sync
+    module: ai_trader.backtesting.strategies.portfolio.triple_rsi
+    args: [self]
+  _apply_heuristics:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [cls, sql_query]
+    params:
+      returns: str
+  _check_for_errors:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [cls, sql_query, sql_dialect, db, catalog, schema_dict]
+    params:
+      returns: tuple
+  _extract_schema_from_ddl_statement:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [cls, ddl_statement]
+    params:
+      returns: TableSchemaType
+  _fix_errors:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [self, sql_query, sql_dialect, apply_heuristics, db, catalog, ddl_schema, number_of_candidates]
+    params:
+      returns: str
+  _get_schema_from_bird_sample:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [cls, sample]
+    params:
+      returns: dict
+  _get_strategies_from_module:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.utils
+    args: [module]
+    params:
+      returns: List[tuple]
+  _get_strategy_description:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.utils
+    args: [strategy_class]
+    params:
+      returns: str
+  _get_strategy_parameters:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.utils
+    args: [strategy_class]
+    params:
+      returns: Dict
+  _get_table_parts:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [cls, table_name]
+    params:
+      returns: tuple
+  _isinstance_bird_sample_type:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [obj]
+    params:
+      returns: bool
+  _isinstance_ddl_schema_type:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [obj]
+    params:
+      returns: bool
+  _isinstance_list_of_str_tuples_lists:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [obj]
+    params:
+      returns: bool
+  _isinstance_sqlglot_schema_type:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [obj]
+    params:
+      returns: bool
+  _load_config:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.config
+    args: [self]
+    params:
+      returns: Dict
+  _normalize_columns:
+    type: sync
+    module: ai_trader.data.fetchers.base
+    args: [self, df]
+    params:
+      returns: pd.DataFrame
+  _parse_response:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [cls, text]
+  _serialize_value_for_sql:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.tools
+    args: [value]
+  _setup_ai_trader_path:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.config
+    args: [self]
+  _validate_dataframe:
+    type: sync
+    module: ai_trader.data.fetchers.base
+    args: [self, df, symbol, skip_volume]
+    params:
+      returns: None
+  add_analyzers:
+    type: sync
+    module: ai_trader.utils.backtest
+    args: [cerebro, analyzers]
+    params:
+      returns: None
+  add_default_analyzers:
+    type: sync
+    module: ai_trader.utils.backtest
+    args: [cerebro]
+    params:
+      returns: None
+  add_portfolio_data:
+    type: sync
+    module: ai_trader.utils.backtest
+    args: [cerebro, data_dir, start_date, end_date, date_col, pattern]
+    params:
+      returns: None
+  add_sizer:
+    type: sync
+    module: ai_trader.utils.backtest
+    args: [cerebro, sizer_type]
+    params:
+      returns: None
+  add_stock_data:
+    type: sync
+    module: ai_trader.utils.backtest
+    args: [cerebro, source, name, start_date, end_date, date_col]
+    params:
+      returns: None
+  alloydb_nl2sql:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.alloydb.tools
+    args: [question, tool_context]
+    params:
+      returns: str
+  bigquery_nl2sql:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.tools
+    args: [question, tool_context]
+    params:
+      returns: str
+  call:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.llm_utils
+    args: [self, prompt, parser_func]
+    params:
+      returns: str
+  call_alloydb_agent:
+    type: async
+    module: agentic_ai_trader.data-science.data_science.tools
+    args: [question, tool_context]
+  call_analytics_agent:
+    type: async
+    module: agentic_ai_trader.data-science.data_science.tools
+    args: [question, tool_context]
+  call_backtesting_execution_agent:
+    type: async
+    module: agentic_ai_trader.trading-backtester.trading_backtester.tools.agent_tools
+    args: [request, strategy_name, parameters, tool_context]
+    params:
+      returns: str
+  call_bigquery_agent:
+    type: async
+    module: agentic_ai_trader.data-science.data_science.tools
+    args: [question, tool_context]
+  call_db_agent:
+    type: async
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bqml.agent
+    args: [question, tool_context]
+  call_optimization_agent:
+    type: async
+    module: agentic_ai_trader.trading-backtester.trading_backtester.tools.agent_tools
+    args: [request, optimization_type, tool_context]
+    params:
+      returns: str
+  call_parallel:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.llm_utils
+    args: [self, prompts, parser_func, timeout, max_retries]
+    params:
+      returns: List[Optional[str]]
+  call_performance_evaluation_agent:
+    type: async
+    module: agentic_ai_trader.trading-backtester.trading_backtester.tools.agent_tools
+    args: [request, tool_context]
+    params:
+      returns: str
+  call_risk_assessment_agent:
+    type: async
+    module: agentic_ai_trader.trading-backtester.trading_backtester.tools.agent_tools
+    args: [request, tool_context]
+    params:
+      returns: str
+  call_strategy_analysis_agent:
+    type: async
+    module: agentic_ai_trader.trading-backtester.trading_backtester.tools.agent_tools
+    args: [request, market_symbol, time_period, tool_context]
+    params:
+      returns: str
+  check_rules:
+    type: sync
+    module: ai_trader.core.utils
+    args: [conds, cutoff]
+    params:
+      returns: bool
+  cleanup_sql:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.alloydb.tools
+    args: [sql_string]
+  create:
+    type: sync
+    module: agentic_ai_trader.financial-advisor.deployment.deploy
+    params:
+      returns: None
+  create_cerebro:
+    type: sync
+    module: ai_trader.utils.backtest
+    args: [cash, commission]
+    params:
+      returns: bt.Cerebro
+  create_results_directory:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.utils
+    args: [base_dir]
+    params:
+      returns: Path
+  decorator:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.llm_utils
+    args: [func]
+  default_serializer:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.utils
+    args: [o]
+  delete:
+    type: sync
+    module: agentic_ai_trader.financial-advisor.deployment.deploy
+    args: [resource_id]
+    params:
+      returns: None
+  exception_wrapper:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.chase_db_tools
+    args: [func]
+  extract_json_from_model_output:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.utils.utils
+    args: [model_output]
+  extract_performance_metrics:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.utils
+    args: [backtest_results]
+    params:
+      returns: Dict
+  extract_schema_from_ddls:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [cls, ddls]
+    params:
+      returns: DDLSchemaType
+  extract_ticker_from_path:
+    type: sync
+    module: ai_trader.core.utils
+    args: [file_path]
+    params:
+      returns: str
+  fetch:
+    type: sync
+    module: ai_trader.data.fetchers.base
+    args: [self]
+    params:
+      returns: pd.DataFrame
+  format_performance_summary:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.utils
+    args: [metrics]
+    params:
+      returns: str
+  format_schema:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [cls, schema]
+    params:
+      returns: SQLGlotSchemaType
+  generate_parameter_grid:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.utils
+    args: [parameter_ranges]
+    params:
+      returns: List[Dict]
+  get:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.config
+    args: [self, key, default]
+    params:
+      returns: Any
+  get_available_strategies:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.utils
+    params:
+      returns: Dict
+  get_backtesting_execution_prompt:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.prompts
+    params:
+      returns: str
+  get_bigquery_schema_and_samples:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.tools
+  get_database_settings:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.tools
+  get_dataset_definitions_for_instructions:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.agent
+    params:
+      returns: str
+  get_env_var:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.utils.utils
+    args: [var_name]
+  get_image_bytes:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.utils.utils
+    args: [filepath]
+  get_logger:
+    type: sync
+    module: ai_trader.core.logging
+    args: [name, level]
+    params:
+      returns: logging.Logger
+  get_market_data_summary:
+    type: async
+    module: agentic_ai_trader.trading-backtester.trading_backtester.tools.coordinator_tools
+    args: [symbol, period, tool_context]
+    params:
+      returns: str
+  get_model:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.config
+    args: [self, agent_name]
+    params:
+      returns: str
+  get_optimization_prompt:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.prompts
+    params:
+      returns: str
+  get_performance_evaluation_prompt:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.prompts
+    params:
+      returns: str
+  get_risk_assessment_prompt:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.prompts
+    params:
+      returns: str
+  get_root_agent:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.agent
+    params:
+      returns: LlmAgent
+  get_root_coordinator_agent:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.agent
+    params:
+      returns: LlmAgent
+  get_root_coordinator_prompt:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.prompts
+    params:
+      returns: str
+  get_schema:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.alloydb.tools
+  get_strategy_analysis_prompt:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.prompts
+    params:
+      returns: str
+  get_toolbox_client:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.alloydb.tools
+  get_toolbox_toolset:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.alloydb.tools
+  init_database_settings:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.agent
+    args: [dataset_config]
+    params:
+      returns: dict
+  initial_bq_nl2sql:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.chase_db_tools
+    args: [question, tool_context]
+    params:
+      returns: str
+  list_agents:
+    type: sync
+    module: agentic_ai_trader.financial-advisor.deployment.deploy
+    params:
+      returns: None
+  list_all_extensions:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.utils.utils
+  load_config_in_context:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.agent
+    args: [callback_context]
+  load_database_settings_in_context:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.agent
+    args: [callback_context]
+  load_dataset_config:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.agent
+  load_example:
+    type: sync
+    module: ai_trader.data.fetchers.base
+    args: [market]
+    params:
+      returns: pd.DataFrame
+  load_session_state:
+    type: async
+    module: agentic_ai_trader.trading-backtester.trading_backtester.tools.coordinator_tools
+    args: [session_name, tool_context]
+    params:
+      returns: str
+  load_strategy_class:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.utils
+    args: [strategy_name]
+    params:
+      returns: Optional[Type[bt.Strategy]]
+  load_strategy_config:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.config
+    args: [config_path]
+    params:
+      returns: Dict
+  log:
+    type: sync
+    module: ai_trader.backtesting.strategies.base
+    args: [self, txt, dt]
+  main:
+    type: sync
+    module: agentic_ai_trader.financial-advisor.deployment.deploy
+    args: [argv]
+    params:
+      returns: None
+  next:
+    type: sync
+    module: ai_trader.backtesting.strategies.portfolio.triple_rsi
+    args: [self]
+  notify_order:
+    type: sync
+    module: ai_trader.backtesting.strategies.base
+    args: [self, order]
+  notify_timer:
+    type: sync
+    module: ai_trader.backtesting.strategies.portfolio.triple_rsi
+    args: [self, timer, when]
+  notify_trade:
+    type: sync
+    module: ai_trader.backtesting.strategies.base
+    args: [self, trade]
+  parse_response:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.chase_db_tools
+    args: [response]
+    params:
+      returns: str
+  prenext:
+    type: sync
+    module: ai_trader.backtesting.strategies.indicators
+    args: [self]
+  print_results:
+    type: sync
+    module: ai_trader.utils.backtest
+    args: [results, initial_value, final_value]
+    params:
+      returns: None
+  rebalance:
+    type: sync
+    module: ai_trader.backtesting.strategies.portfolio.triple_rsi
+    args: [self]
+  retry:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.llm_utils
+    args: [max_attempts, base_delay, backoff_factor]
+  return_instructions_alloydb:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.alloydb.prompts
+    params:
+      returns: str
+  return_instructions_analytics:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.analytics.prompts
+    params:
+      returns: str
+  return_instructions_bigquery:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.prompts
+    params:
+      returns: str
+  return_instructions_bqml:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bqml.prompts
+    params:
+      returns: str
+  return_instructions_root:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.prompts
+    params:
+      returns: str
+  rewrite_schema_for_sqlglot:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [cls, schema]
+    params:
+      returns: SQLGlotSchemaType
+  run_alloydb_query:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.alloydb.tools
+    args: [sql_string, tool_context]
+    params:
+      returns: dict
+  run_backtest:
+    type: sync
+    module: ai_trader.utils.backtest
+    args: [strategy, data_source, cash, commission, start_date, end_date, sizer_type, sizer_params, analyzers, strategy_params,
+      print_output, plot, plot_params]
+    params:
+      returns: List[bt.Strategy]
+  safe_json_serialize:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.utils
+    args: [obj]
+    params:
+      returns: str
+  save_session_state:
+    type: async
+    module: agentic_ai_trader.trading-backtester.trading_backtester.tools.coordinator_tools
+    args: [session_name, tool_context]
+    params:
+      returns: str
+  save_strategy_config:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.config
+    args: [config_data, config_path]
+    params:
+      returns: None
+  setup_before_agent_call:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bqml.agent
+    args: [callback_context]
+  setup_logger:
+    type: sync
+    module: ai_trader.core.logging
+    args: [name, level, log_file, format_string]
+    params:
+      returns: logging.Logger
+  setup_staging_bucket:
+    type: sync
+    module: agentic_ai_trader.data-science.deployment.deploy
+    args: [project_id, location, bucket_name]
+    params:
+      returns: str
+  store_results_in_context:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.agent
+    args: [tool, args, tool_context, tool_response]
+    params:
+      returns: Optional[Dict]
+  translate:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.sql_postprocessor.sql_translator
+    args: [self, sql_query, db, catalog, ddl_schema]
+    params:
+      returns: str
+  update_database_settings:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.tools
+  validate:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.config
+    args: [self]
+    params:
+      returns: bool
+  validate_date_range:
+    type: sync
+    module: agentic_ai_trader.trading-backtester.trading_backtester.core.utils
+    args: [start_date, end_date]
+    params:
+      returns: tuple
+  worker:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.llm_utils
+    args: [index, prompt]
+  wrapped_function:
+    type: sync
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.chase_db_tools
+  wrapper:
+    type: tool
+    module: agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.llm_utils
+
+variables:
+  AI_TRADER_PATH:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  ALLOYDB_TOOLSET:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.data-science.data_science.sub_agents.alloydb.tools]
+  BACKTESTING_EXECUTION_MODEL:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  BASELINE_NL2SQL_MODEL:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.data-science.data_science.sub_agents.alloydb.tools, agentic_ai_trader.data-science.data_science.sub_agents.bigquery.tools]
+  BQ_DATA_PROJECT_ID:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.chase_db_tools]
+  DATASET_CONFIG_FILE:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.data-science.data_science.agent]
+  DEFAULT_CASH:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  DEFAULT_COMMISSION:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  DEFAULT_DATA_DIR:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  GOOGLE_CLOUD_LOCATION:
+    type: env
+    params:
+      caller: [os.getenv, os.environ]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config, agentic_ai_trader.data-science.data_science.sub_agents.alloydb.tools,
+        agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.llm_utils, agentic_ai_trader.data-science.deployment.deploy,
+        agentic_ai_trader.financial-advisor.deployment.deploy]
+  GOOGLE_CLOUD_PROJECT:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config, agentic_ai_trader.data-science.data_science.sub_agents.alloydb.tools,
+        agentic_ai_trader.data-science.data_science.sub_agents.bigquery.chase_sql.llm_utils, agentic_ai_trader.data-science.deployment.deploy,
+        agentic_ai_trader.financial-advisor.deployment.deploy]
+  GOOGLE_CLOUD_STORAGE_BUCKET:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.data-science.deployment.deploy, agentic_ai_trader.financial-advisor.deployment.deploy]
+  GOOGLE_GENAI_USE_VERTEXAI:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  key:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.data-science.deployment.deploy]
+  LOG_LEVEL:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  MAX_PARALLEL_BACKTESTS:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  MCP_TOOLBOX_HOST:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.data-science.data_science.sub_agents.alloydb.tools]
+  MCP_TOOLBOX_PORT:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.data-science.data_science.sub_agents.alloydb.tools]
+  NL2SQL_METHOD:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.data-science.data_science.sub_agents.bigquery.agent, agentic_ai_trader.data-science.data_science.sub_agents.bigquery.prompts]
+  OPTIMIZATION_MODEL:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  PERFORMANCE_EVALUATION_MODEL:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  RISK_ASSESSMENT_MODEL:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  ROOT_AGENT_MODEL:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  STRATEGY_ANALYSIS_MODEL:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config]
+  WANDB_API_KEY:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config, agentic_ai_trader.data-science.data_science.agent]
+  WANDB_PROJECT_ID:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [agentic_ai_trader.trading-backtester.trading_backtester.core.config, agentic_ai_trader.data-science.data_science.agent]
+
+files:
+  .json:
+    type: literal
+    actions: [read]
+    params:
+      caller: [save_session_state, load_session_state]
+      path: [sessions_dir]
+  ai_trader_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [Path.resolve()]
+  base_dir:
+    type: variable
+    actions: [read]
+    params:
+      caller: [Path]
+  config_path:
+    type: variable
+    actions: [read, write]
+    params:
+      caller: [open, yaml.safe_load]
+      alias: [f]
+  data_dir:
+    type: literal
+    actions: [read]
+    params:
+      caller: [Path(data_dir), Path]
+  file_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [Path()]
+  filepath:
+    type: variable
+    actions: [read]
+    params:
+      caller: [open]
+      alias: [f]
+  log_file:
+    type: variable
+    actions: [read, write]
+    params:
+      caller: [Path, log_file.parent.mkdir]
+  results_dir:
+    type: variable
+    actions: [write]
+    params:
+      caller: [results_dir.mkdir]
+  session_file:
+    type: variable
+    actions: [write, read]
+    params:
+      caller: [open, json.load]
+      alias: [f]
+  sessions_dir:
+    type: literal
+    actions: [read, write]
+    params:
+      caller: [Path(sessions), sessions_dir.mkdir]
+
+networks:
+  toolbox_url:
+    type: api
+    actions: [GET]
+    protocols: [http]
+    ports: ["80"]
+    params:
+      pattern: http://{MCP_TOOLBOX_HOST}:{MCP_TOOLBOX_PORT}
+      caller: [get_toolbox_client]
+      dynamic: "True"
+      variable: toolbox_url
+  toolbox_url.1:
+    type: api
+    actions: [GET]
+    protocols: [https]
+    ports: ["443"]
+    params:
+      pattern: https://{MCP_TOOLBOX_HOST}
+      caller: [get_toolbox_client]
+      dynamic: "True"
+      variable: toolbox_url
+  trace.wandb.ai:
+    type: api
+    actions: [GET]
+    urls: [/otel/v1/traces]
+    protocols: [https]
+    ports: ["443"]
+    params:
+      caller: [OTLPSpanExporter]
