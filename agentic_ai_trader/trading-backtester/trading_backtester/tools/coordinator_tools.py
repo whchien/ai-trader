@@ -42,11 +42,26 @@ async def get_available_strategies(
         # Prepare response with strategy summaries
         strategy_summaries = {}
         for name, info in filtered_strategies.items():
+            # Extract only JSON-serializable parameter defaults
+            param_defaults = {}
+            for param_name, param_value in info["parameters"].items():
+                # Skip non-serializable types (callables, classes, etc.)
+                if not callable(param_value) and not isinstance(param_value, type):
+                    try:
+                        json.dumps(param_value)
+                        param_defaults[param_name] = param_value
+                    except (TypeError, ValueError):
+                        # Convert non-serializable objects to string representation
+                        param_defaults[param_name] = str(param_value)
+                else:
+                    # Store callable/class as string
+                    param_defaults[param_name] = str(param_value)
+
             strategy_summaries[name] = {
                 "type": info["type"],
                 "description": info["description"],
                 "parameters": list(info["parameters"].keys()),
-                "parameter_defaults": info["parameters"],
+                "parameter_defaults": param_defaults,
             }
 
         result = {
@@ -55,10 +70,20 @@ async def get_available_strategies(
             "strategies": strategy_summaries,
         }
 
-        # Store in context for other agents
+        # Store in context for other agents (only JSON-serializable data)
         if tool_context:
-            tool_context.state["available_strategies"] = all_strategies
-            tool_context.state["filtered_strategies"] = filtered_strategies
+            # Create a clean version without non-serializable objects
+            clean_strategies = {}
+            for name, info in all_strategies.items():
+                clean_strategies[name] = {
+                    "type": info["type"],
+                    "description": info["description"],
+                    "parameters": list(info["parameters"].keys()),
+                    "module": info["module"],
+                    # Don't store the class object itself
+                }
+            tool_context.state["available_strategies"] = clean_strategies
+            tool_context.state["filtered_strategies"] = strategy_summaries
 
         logger.info(f"Found {len(strategy_summaries)} strategies")
         return json.dumps(result, indent=2)
