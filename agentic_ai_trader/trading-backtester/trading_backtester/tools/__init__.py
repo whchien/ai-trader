@@ -13,6 +13,7 @@ from .coordinator_tools import (
     load_session_state,
     save_session_state,
 )
+from .mcp_tools import fetch_market_data, quick_backtest, run_backtest_from_config
 
 __all__ = [
     # Coordinator tools
@@ -20,6 +21,10 @@ __all__ = [
     "get_market_data_summary",
     "save_session_state",
     "load_session_state",
+    # MCP-wrapped tools
+    "run_backtest_from_config",
+    "quick_backtest",
+    "fetch_market_data",
     # Agent delegation tools
     "call_strategy_analysis_agent",
     "call_backtesting_execution_agent",

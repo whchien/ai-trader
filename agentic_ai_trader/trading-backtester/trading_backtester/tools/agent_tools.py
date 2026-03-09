@@ -1,6 +1,9 @@
 """Agent delegation tools for the Root Coordinator Agent."""
 
+import json
 import logging
+import re
+from pathlib import Path
 from typing import Any, Dict
 
 from google.adk.tools import ToolContext
@@ -139,22 +142,67 @@ async def call_backtesting_execution_agent(
         return result
 
     except ImportError:
-        # Placeholder response for Phase 1
-        placeholder_response = f"""
-        Backtesting Execution Agent (Placeholder - Phase 3):
-        
-        Request: {request}
-        Strategy: {strategy_name}
-        Parameters: {parameters}
-        
-        This agent will execute backtests using the ai_trader framework.
-        Implementation coming in Phase 3.
-        """
+        # Fallback to direct quick_backtest tool for Phase 3
+        logger.info("Backtesting Execution Agent not available, using quick_backtest tool")
 
-        if tool_context:
-            tool_context.state["backtesting_execution_output"] = placeholder_response
+        try:
+            from .mcp_tools import quick_backtest
 
-        return placeholder_response
+            # Try to find data file in context if not specified
+            data_file = None
+            if tool_context:
+                # Look for fetched data files or market data
+                for key in tool_context.state.keys():
+                    if key.startswith("fetched_data_"):
+                        data_file = tool_context.state[key]
+                        break
+                    elif key.endswith("_data"):
+                        # Check if it's a DataFrame, extract its source file if possible
+                        continue
+
+            # If no data file found and we have context, check for recently fetched files
+            if not data_file and tool_context and "fetched_data_files" in tool_context.state:
+                files = tool_context.state["fetched_data_files"]
+                if files:
+                    data_file = files[0]
+
+            if not data_file:
+                return json.dumps({
+                    "status": "error",
+                    "message": "No data file available for backtesting. Please fetch market data first using fetch_market_data tool."
+                })
+
+            # Use strategy_name if provided, otherwise default to first available
+            if not strategy_name:
+                available = tool_context.state.get("available_strategies", {}) if tool_context else {}
+                if available:
+                    strategy_name = list(available.keys())[0]
+                else:
+                    strategy_name = "SMAStrategy"  # Default fallback
+
+            logger.info(f"Running quick_backtest: {strategy_name} on {data_file}")
+
+            # Run quick backtest with executor context
+            result_json = await quick_backtest(
+                strategy_name=strategy_name,
+                data_file=data_file,
+                cash=1000000,
+                commission=0.001425,
+                tool_context=tool_context,
+            )
+
+            # Store result in context
+            if tool_context:
+                tool_context.state["backtesting_execution_output"] = result_json
+
+            return result_json
+
+        except Exception as fallback_error:
+            logger.error(f"Error in quick_backtest fallback: {fallback_error}")
+            return json.dumps({
+                "status": "error",
+                "message": f"Backtesting failed: {str(fallback_error)}"
+            })
 
     except Exception as e:
         logger.error(f"Error calling Backtesting Execution Agent: {e}")
