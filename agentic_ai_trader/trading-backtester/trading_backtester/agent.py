@@ -5,22 +5,20 @@ from datetime import date
 
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
+from google.adk.tools.agent_tool import AgentTool
 from google.genai import types
 
 from .core.config import config
 from .prompts import get_root_coordinator_prompt
+from .sub_agents import (
+    backtesting_execution_agent,
+    strategy_analysis_agent,
+    trader_agent,
+)
 from .tools import (
-    call_backtesting_execution_agent,
-    call_optimization_agent,
-    call_performance_evaluation_agent,
-    call_risk_assessment_agent,
-    call_strategy_analysis_agent,
-    fetch_market_data,
     get_available_strategies,
     get_market_data_summary,
     load_session_state,
-    quick_backtest,
-    run_backtest_from_config,
     save_session_state,
 )
 
@@ -54,16 +52,10 @@ def get_root_coordinator_agent() -> LlmAgent:
         get_market_data_summary,
         save_session_state,
         load_session_state,
-        # MCP-wrapped tools
-        run_backtest_from_config,
-        quick_backtest,
-        fetch_market_data,
-        # Agent delegation tools
-        call_strategy_analysis_agent,
-        call_backtesting_execution_agent,
-        call_performance_evaluation_agent,
-        call_risk_assessment_agent,
-        call_optimization_agent,
+        # Sub-agents (wrapped as AgentTools)
+        AgentTool(agent=strategy_analysis_agent),
+        AgentTool(agent=backtesting_execution_agent),
+        AgentTool(agent=trader_agent),
     ]
 
     # Create the agent
