@@ -35,14 +35,17 @@ Use this if you want to:
 ```bash
 git clone https://github.com/whchien/ai-trader.git
 cd ai-trader
-pip install -e .
+
+# Install dependencies (choose one method)
+uv sync        # Recommended (fastest, modern tool)
+# poetry install   # Or use Poetry
+# pip install -e .  # Or traditional pip with editable install
 ```
 Use this if you want to:
 - Run the config-based examples in `config/backtest/`
 - Use the example data files in `data/`
 - Run the example scripts in `scripts/examples/`
 - Contribute or customize strategies
-*(Poetry users can run `poetry install`)*
 
 **2. Run a Backtest via CLI**
 
@@ -62,7 +65,7 @@ ai-trader quick CrossSMAStrategy your_data.csv --cash 100000
 
 Download historical data for any supported market:
 ```bash
-# US Stock
+# US Stock (default: saves to CSV)
 ai-trader fetch TSM --market us_stock --start-date 2020-01-01
 
 # Taiwan Stock (台灣股票)
@@ -70,7 +73,34 @@ ai-trader fetch 2330 --market tw_stock --start-date 2020-01-01
 
 # Cryptocurrency
 ai-trader fetch BTC-USD --market crypto --start-date 2020-01-01
+
+# With SQLite persistent caching (NEW!)
+ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage sqlite
+
+# Save to both CSV and SQLite
+ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage both
 ```
+
+**Persistent Data Storage with SQLite**
+
+By default, `ai-trader fetch` saves data to CSV. For faster repeated backtests, use SQLite:
+
+```bash
+# First fetch: Downloads from API and caches in SQLite (~2-3 seconds)
+ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage sqlite
+
+# Repeated fetch: Loads from cache (~50ms, no API call)
+ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage sqlite
+
+# Check cached data
+ai-trader data list
+ai-trader data info
+
+# Clean old data
+ai-trader data clean --market us_stock --before 2020-01-01
+```
+
+[**Learn more about SQLite Storage →**](agentic_ai_trader/trading-backtester/README.md#persistent-data-storage-with-sqlite)
 
 ## Core Workflows
 

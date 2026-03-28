@@ -14,7 +14,7 @@ from ai_trader.data.fetchers import (
     USStockFetcher,
     VIXDataFetcher,
 )
-from ai_trader.data.storage import FileManager
+from ai_trader.data.storage import FileManager, SQLiteDataStorage
 from ai_trader.mcp.models import FetchDataRequest, FetchedSymbol, FetchResult
 
 logger = get_logger(__name__)
@@ -113,26 +113,51 @@ async def fetch_data_tool(
                     logger.warning(f"Failed to fetch {symbol}: {e}")
 
         # Save all successful downloads
-        file_manager = FileManager(base_data_dir=market_dir)
+        file_manager = (
+            FileManager(base_data_dir=market_dir) if request.storage in ("csv", "both") else None
+        )
+        sqlite_storage = (
+            SQLiteDataStorage(db_path=f"{request.output_dir}/market_data.db")
+            if request.storage in ("sqlite", "both")
+            else None
+        )
 
         for symbol, df in successful_data.items():
             try:
                 actual_end_date = request.end_date or df.index[-1].strftime("%Y-%m-%d")
-                filepath = file_manager.save_to_csv(
-                    df=df,
-                    ticker=symbol,
-                    start_date=request.start_date,
-                    end_date=actual_end_date,
-                    overwrite=True,
-                )
-                files_saved.append(
-                    FetchedSymbol(
-                        symbol=symbol,
-                        filepath=str(filepath),
-                        rows=len(df),
+                filepath = None
+
+                # Save to CSV if requested
+                if file_manager:
+                    filepath = file_manager.save_to_csv(
+                        df=df,
+                        ticker=symbol,
+                        start_date=request.start_date,
+                        end_date=actual_end_date,
+                        overwrite=True,
                     )
-                )
-                await ctx.info(f"Saved {symbol} to {Path(filepath).name}")
+                    files_saved.append(
+                        FetchedSymbol(
+                            symbol=symbol,
+                            filepath=str(filepath),
+                            rows=len(df),
+                        )
+                    )
+                    await ctx.info(f"Saved {symbol} to {Path(filepath).name}")
+
+                # Save to SQLite if requested
+                if sqlite_storage:
+                    sqlite_storage.save(df=df, ticker=symbol, market_type=request.market)
+                    await ctx.info(f"Saved {symbol} to SQLite database")
+                    if not filepath:  # Only add to files_saved if not already added via CSV
+                        files_saved.append(
+                            FetchedSymbol(
+                                symbol=symbol,
+                                filepath=f"{request.output_dir}/market_data.db",
+                                rows=len(df),
+                            )
+                        )
+
             except Exception as e:
                 logger.error(f"Failed to save {symbol}: {e}")
                 if symbol in successful_data:

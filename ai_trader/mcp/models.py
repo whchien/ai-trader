@@ -39,6 +39,9 @@ class FetchDataRequest(BaseModel):
         None, description="End date in YYYY-MM-DD format (defaults to today)"
     )
     output_dir: str = Field("./data", description="Output directory for saved CSV files")
+    storage: Literal["csv", "sqlite", "both"] = Field(
+        "csv", description="Storage format: csv (default), sqlite (cached), or both"
+    )
 
 
 class ListStrategiesRequest(BaseModel):

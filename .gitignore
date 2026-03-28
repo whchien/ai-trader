@@ -5,6 +5,10 @@ __pycache__/
 .pyc
 _data/
 
+*.db
+
+poetry.lock
+
 # C extensions
 *.so
 
