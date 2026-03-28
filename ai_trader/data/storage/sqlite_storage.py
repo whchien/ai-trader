@@ -70,11 +70,16 @@ class SQLiteDataStorage:
             Tuple of (first_date, last_date), or None if no data
         """
         with Session(self.engine) as session:
-            meta = session.exec(
-                select(DataMetadata)
-                .where(DataMetadata.ticker == ticker)
-                .where(DataMetadata.market_type == market_type)
-            ).unique().scalars().first()
+            meta = (
+                session.exec(
+                    select(DataMetadata)
+                    .where(DataMetadata.ticker == ticker)
+                    .where(DataMetadata.market_type == market_type)
+                )
+                .unique()
+                .scalars()
+                .first()
+            )
 
             if meta:
                 # Access attributes before session closes
@@ -83,9 +88,7 @@ class SQLiteDataStorage:
                 return first, last
             return None
 
-    def load(
-        self, ticker: str, market_type: str, start_date: str, end_date: str
-    ) -> pd.DataFrame:
+    def load(self, ticker: str, market_type: str, start_date: str, end_date: str) -> pd.DataFrame:
         """
         Load market data from database as DataFrame.
 
@@ -103,13 +106,18 @@ class SQLiteDataStorage:
         end = date.fromisoformat(end_date)
 
         with Session(self.engine) as session:
-            rows = session.exec(
-                select(model)
-                .where(model.ticker == ticker)
-                .where(model.date >= start)
-                .where(model.date <= end)
-                .order_by(model.date)
-            ).unique().scalars().all()
+            rows = (
+                session.exec(
+                    select(model)
+                    .where(model.ticker == ticker)
+                    .where(model.date >= start)
+                    .where(model.date <= end)
+                    .order_by(model.date)
+                )
+                .unique()
+                .scalars()
+                .all()
+            )
 
         if not rows:
             logger.warning(f"No data found for {ticker} in {market_type}")

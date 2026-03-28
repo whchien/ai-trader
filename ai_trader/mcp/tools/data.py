@@ -113,8 +113,14 @@ async def fetch_data_tool(
                     logger.warning(f"Failed to fetch {symbol}: {e}")
 
         # Save all successful downloads
-        file_manager = FileManager(base_data_dir=market_dir) if request.storage in ("csv", "both") else None
-        sqlite_storage = SQLiteDataStorage(db_path=f"{request.output_dir}/market_data.db") if request.storage in ("sqlite", "both") else None
+        file_manager = (
+            FileManager(base_data_dir=market_dir) if request.storage in ("csv", "both") else None
+        )
+        sqlite_storage = (
+            SQLiteDataStorage(db_path=f"{request.output_dir}/market_data.db")
+            if request.storage in ("sqlite", "both")
+            else None
+        )
 
         for symbol, df in successful_data.items():
             try:
