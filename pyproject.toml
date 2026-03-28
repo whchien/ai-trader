@@ -42,6 +42,7 @@ dependencies = [
     "pyyaml>=6.0.0",
     "requests>=2.32.4",
     "fastmcp>=2.0.0",
+    "sqlmodel>=0.0.18",
 ]
 
 [project.optional-dependencies]

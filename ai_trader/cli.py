@@ -197,6 +197,12 @@ def list_strategies(strategy_type: str):
 @click.option("--start-date", required=True, help="Start date (YYYY-MM-DD)")
 @click.option("--end-date", help="End date (YYYY-MM-DD), defaults to today")
 @click.option("--output-dir", help="Output directory", default="./data")
+@click.option(
+    "--storage",
+    type=click.Choice(["csv", "sqlite", "both"]),
+    default="csv",
+    help="Storage format: csv (default), sqlite (cached), or both",
+)
 def fetch(
     symbols: tuple[str],
     symbols_file: Optional[str],
@@ -204,6 +210,7 @@ def fetch(
     start_date: str,
     end_date: Optional[str],
     output_dir: str,
+    storage: str,
 ):
     """
     Fetch market data and save to CSV.
@@ -228,7 +235,7 @@ def fetch(
         USStockFetcher,
         VIXDataFetcher,
     )
-    from ai_trader.data.storage import FileManager
+    from ai_trader.data.storage import FileManager, SQLiteDataStorage
 
     # Factory mapping for fetcher classes
     fetcher_factory = {
@@ -311,19 +318,31 @@ def fetch(
                 click.echo("✗ No data returned", err=True)
                 sys.exit(1)
 
-            # Save using FileManager
-            file_manager = FileManager(base_data_dir=market_dir)
             actual_end_date = end_date or df.index[-1].strftime("%Y-%m-%d")
+            saved_locations = []
 
-            filepath = file_manager.save_to_csv(
-                df=df,
-                ticker=symbol,
-                start_date=start_date,
-                end_date=actual_end_date,
-                overwrite=True,
-            )
+            # Save to CSV if requested
+            if storage in ("csv", "both"):
+                file_manager = FileManager(base_data_dir=market_dir)
+                filepath = file_manager.save_to_csv(
+                    df=df,
+                    ticker=symbol,
+                    start_date=start_date,
+                    end_date=actual_end_date,
+                    overwrite=True,
+                )
+                saved_locations.append(f"CSV: {filepath}")
 
-            click.echo(f"✓ Data saved to {filepath}")
+            # Save to SQLite if requested
+            if storage in ("sqlite", "both"):
+                db_path = f"{output_dir}/market_data.db"
+                sqlite_storage = SQLiteDataStorage(db_path=db_path)
+                sqlite_storage.save(df=df, ticker=symbol, market_type=market)
+                saved_locations.append(f"SQLite: {db_path}")
+
+            click.echo(f"✓ Data saved:")
+            for loc in saved_locations:
+                click.echo(f"  • {loc}")
             click.echo(f"  Rows: {len(df)}")
             click.echo(f"  Columns: {', '.join(df.columns)}")
             click.echo(f"  Date range: {df.index[0]} to {df.index[-1]}")
@@ -353,17 +372,32 @@ def fetch(
 
             # Save all successful downloads
             file_manager = FileManager(base_data_dir=market_dir)
+            sqlite_storage = None
+            if storage in ("sqlite", "both"):
+                db_path = f"{output_dir}/market_data.db"
+                sqlite_storage = SQLiteDataStorage(db_path=db_path)
+
             saved_files = []
 
             for symbol, df in successful_data.items():
                 actual_end_date = end_date or df.index[-1].strftime("%Y-%m-%d")
-                filepath = file_manager.save_to_csv(
-                    df=df,
-                    ticker=symbol,
-                    start_date=start_date,
-                    end_date=actual_end_date,
-                    overwrite=True,
-                )
+
+                # Save to CSV if requested
+                if storage in ("csv", "both"):
+                    filepath = file_manager.save_to_csv(
+                        df=df,
+                        ticker=symbol,
+                        start_date=start_date,
+                        end_date=actual_end_date,
+                        overwrite=True,
+                    )
+                else:
+                    filepath = None
+
+                # Save to SQLite if requested
+                if sqlite_storage:
+                    sqlite_storage.save(df=df, ticker=symbol, market_type=market)
+
                 saved_files.append((symbol, filepath, len(df)))
 
             # Display summary
@@ -372,7 +406,10 @@ def fetch(
                     f"\n✓ Successfully downloaded {len(saved_files)}/{len(symbol_list)} symbols:"
                 )
                 for symbol, filepath, rows in saved_files:
-                    click.echo(f"  • {symbol}: {rows} rows → {Path(filepath).name}")
+                    if filepath:
+                        click.echo(f"  • {symbol}: {rows} rows → {Path(filepath).name}")
+                    else:
+                        click.echo(f"  • {symbol}: {rows} rows → SQLite")
 
             if failed_symbols:
                 click.echo(f"\n✗ Failed to download {len(failed_symbols)} symbol(s):")
@@ -387,6 +424,101 @@ def fetch(
     except Exception as e:
         click.echo(f"\n✗ Failed to fetch data: {e}", err=True)
         logger.exception("Error in fetch command")
+        sys.exit(1)
+
+
+@cli.group()
+def data():
+    """Manage market data in SQLite database."""
+    pass
+
+
+@data.command("list")
+@click.option("--market", help="Filter by market type")
+@click.option("--ticker", help="Filter by ticker symbol")
+def data_list(market: Optional[str], ticker: Optional[str]):
+    """List all tickers in the SQLite database."""
+    from ai_trader.data.storage import SQLiteDataStorage
+
+    try:
+        storage = SQLiteDataStorage()
+        tickers = storage.list_tickers(market_type=market)
+
+        if ticker:
+            tickers = [t for t in tickers if t["ticker"] == ticker]
+
+        if not tickers:
+            click.echo("No tickers found")
+            return
+
+        click.echo("\nStored market data:")
+        click.echo("-" * 80)
+        for t in tickers:
+            click.echo(
+                f"  {t['ticker']:10s} | {t['market']:10s} | "
+                f"{t['from']} to {t['to']} | {t['rows']:8d} rows"
+            )
+        click.echo()
+
+    except Exception as e:
+        click.echo(f"✗ Error: {e}", err=True)
+        sys.exit(1)
+
+
+@data.command("delete")
+@click.option("--ticker", required=True, help="Ticker to delete")
+@click.option("--market", required=True, help="Market type")
+@click.confirmation_option(prompt="Are you sure you want to delete this data?")
+def data_delete(ticker: str, market: str):
+    """Delete data for a specific ticker."""
+    from ai_trader.data.storage import SQLiteDataStorage
+
+    try:
+        storage = SQLiteDataStorage()
+        count = storage.delete_ticker(ticker, market)
+        click.echo(f"✓ Deleted {count} rows for {ticker} from {market}")
+    except Exception as e:
+        click.echo(f"✗ Error: {e}", err=True)
+        sys.exit(1)
+
+
+@data.command("clean")
+@click.option("--market", required=True, help="Market type")
+@click.option("--before", required=True, help="Delete rows before this date (YYYY-MM-DD)")
+@click.confirmation_option(prompt="Are you sure you want to delete this data?")
+def data_clean(market: str, before: str):
+    """Delete old data before a given date."""
+    from ai_trader.data.storage import SQLiteDataStorage
+
+    try:
+        storage = SQLiteDataStorage()
+        count = storage.delete_before(market, before)
+        click.echo(f"✓ Deleted {count} rows before {before} from {market}")
+    except Exception as e:
+        click.echo(f"✗ Error: {e}", err=True)
+        sys.exit(1)
+
+
+@data.command("info")
+def data_info():
+    """Show database information."""
+    from ai_trader.data.storage import SQLiteDataStorage
+
+    try:
+        storage = SQLiteDataStorage()
+        info = storage.get_database_info()
+
+        click.echo("\nDatabase information:")
+        click.echo(f"  Path: {info['path']}")
+        click.echo(f"  Size: {info['size_bytes']:,} bytes")
+        click.echo(f"  Total tickers: {info['total_tickers']}")
+        click.echo(f"  Tickers by market:")
+        for market, count in info["tickers_by_market"].items():
+            click.echo(f"    • {market:10s}: {count} tickers")
+        click.echo()
+
+    except Exception as e:
+        click.echo(f"✗ Error: {e}", err=True)
         sys.exit(1)
 
 
