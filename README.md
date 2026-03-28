@@ -35,14 +35,17 @@ Use this if you want to:
 ```bash
 git clone https://github.com/whchien/ai-trader.git
 cd ai-trader
-pip install -e .
+
+# Install dependencies (choose one method)
+uv sync        # Recommended (fastest, modern tool)
+# poetry install   # Or use Poetry
+# pip install -e .  # Or traditional pip with editable install
 ```
 Use this if you want to:
 - Run the config-based examples in `config/backtest/`
 - Use the example data files in `data/`
 - Run the example scripts in `scripts/examples/`
 - Contribute or customize strategies
-*(Poetry users can run `poetry install`)*
 
 **2. Run a Backtest via CLI**
 
@@ -78,7 +81,7 @@ ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage sqlite
 ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage both
 ```
 
-**Persistent Data Storage with SQLite** ✨
+**Persistent Data Storage with SQLite**
 
 By default, `ai-trader fetch` saves data to CSV. For faster repeated backtests, use SQLite:
 
@@ -86,7 +89,7 @@ By default, `ai-trader fetch` saves data to CSV. For faster repeated backtests, 
 # First fetch: Downloads from API and caches in SQLite (~2-3 seconds)
 ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage sqlite
 
-# Repeated fetch: Loads from cache (~50ms, no API call!)
+# Repeated fetch: Loads from cache (~50ms, no API call)
 ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage sqlite
 
 # Check cached data

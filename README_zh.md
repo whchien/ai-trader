@@ -27,13 +27,22 @@
 pip install ai-trader
 ```
 
-**選項 B：從原始程式碼安裝**
+**選項 B：從原始程式碼安裝（推薦用於範例和設定檔範本）**
 ```bash
 git clone https://github.com/whchien/ai-trader.git
 cd ai-trader
-pip install -e .
+
+# 安裝依賴（選擇一種方式）
+uv sync        # 推薦（最快，現代化工具）
+# poetry install   # 或使用 Poetry
+# pip install -e .  # 或傳統 pip 可編輯安裝
 ```
-*(Poetry 使用者可執行 `poetry install`)*
+
+適用於以下情況：
+- 執行 `config/backtest/` 中的設定檔範例
+- 使用 `data/` 中的範例資料
+- 執行 `scripts/examples/` 中的範例腳本
+- 貢獻或自訂策略
 
 **2. 透過 CLI 執行回測 (建議)**
 
@@ -77,7 +86,7 @@ ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage both
 # 第一次擷取：從 API 下載並快取到 SQLite（約 2-3 秒）
 ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage sqlite
 
-# 重複擷取：從快取載入（約 50ms，無 API 呼叫！）
+# 重複擷取：從快取載入（約 50ms，無 API 呼叫）
 ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage sqlite
 
 # 查看快取資料
