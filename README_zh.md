@@ -53,12 +53,42 @@ ai-trader quick CrossSMAStrategy data/us_stock/tsm.csv --cash 100000
 
 為任何支援的市場下載歷史資料：
 ```bash
-# 美國股市
+# 美國股市（預設：存檔為 CSV）
 ai-trader fetch AAPL --market us_stock --start-date 2020-01-01
+
+# 台灣股市（台灣股票）
+ai-trader fetch 2330 --market tw_stock --start-date 2020-01-01
 
 # 加密貨幣
 ai-trader fetch BTC-USD --market crypto --start-date 2020-01-01
+
+# 使用 SQLite 永久快取（新功能！）
+ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage sqlite
+
+# 同時存檔為 CSV 和 SQLite
+ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage both
 ```
+
+**使用 SQLite 進行永久資料存儲**
+
+預設情況下，`ai-trader fetch` 將資料存檔為 CSV。為了更快的重複回測，請使用 SQLite：
+
+```bash
+# 第一次擷取：從 API 下載並快取到 SQLite（約 2-3 秒）
+ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage sqlite
+
+# 重複擷取：從快取載入（約 50ms，無 API 呼叫！）
+ai-trader fetch AAPL --market us_stock --start-date 2024-01-01 --storage sqlite
+
+# 查看快取資料
+ai-trader data list
+ai-trader data info
+
+# 清理舊資料
+ai-trader data clean --market us_stock --before 2020-01-01
+```
+
+[**深入了解 SQLite 存儲→**](SQLITE_STORAGE_GUIDE.md)
 
 ## 核心工作流程
 

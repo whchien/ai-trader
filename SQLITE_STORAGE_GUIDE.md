@@ -5,11 +5,11 @@
 The ai-trader framework now includes a powerful **SQLite-based persistent data storage layer** using **SQLModel ORM**. This eliminates redundant API calls and dramatically speeds up repeated backtests.
 
 **Benefits:**
-- 🚀 **40x faster** on repeated fetches (~2-3s → ~50ms)
-- 💾 **Incremental updates** - Only fetch missing dates
-- 🌍 **Multi-market support** - US stocks, Taiwan stocks, crypto, forex, VIX
-- 🔒 **Type-safe ORM** - SQLModel with proper schema constraints
-- 📊 **Easy management** - CLI commands for list, delete, clean
+- **40x faster** on repeated fetches (~2-3s → ~50ms)
+- **Incremental updates** - Only fetch missing dates
+- **Multi-market support** - US stocks, Taiwan stocks, crypto, forex, VIX
+- **Type-safe ORM** - SQLModel with proper schema constraints
+- **Easy management** - CLI commands for list, delete, clean
 
 ## Quick Start
 
@@ -116,11 +116,11 @@ storage.delete_before("us_stock", "2020-01-01")
 
 | Market | Table | Has adj_close | Example Tickers |
 |--------|-------|---|---|
-| `us_stock` | us_stock_data | ✅ Yes | AAPL, MSFT, TSLA |
-| `tw_stock` | tw_stock_data | ❌ No | 2330, 2454, 3008 |
-| `crypto` | crypto_data | ✅ Yes | BTC-USD, ETH-USD |
-| `forex` | forex_data | ✅ Yes | EURUSD, GBPUSD |
-| `vix` | vix_data | ✅ Yes | ^VIX |
+| `us_stock` | us_stock_data | Yes | AAPL, MSFT, TSLA |
+| `tw_stock` | tw_stock_data | No | 2330, 2454, 3008 |
+| `crypto` | crypto_data | Yes | BTC-USD, ETH-USD |
+| `forex` | forex_data | Yes | EURUSD, GBPUSD |
+| `vix` | vix_data | Yes | ^VIX |
 
 ## Incremental Update Logic
 
@@ -201,7 +201,7 @@ python scripts/examples/sqlite_storage_example.py
 
 ## Best Practices
 
-### ✅ Do's
+### Do's
 
 1. **Use SQLite for repeated backtests**
    ```bash
@@ -231,7 +231,7 @@ python scripts/examples/sqlite_storage_example.py
    ai-trader data info
    ```
 
-### ❌ Don'ts
+### Don'ts
 
 1. **Don't use SQLite for one-off backtests**
    - CSV is fine if data isn't reused
@@ -329,10 +329,10 @@ from ai_trader.data.storage import USStockData, TWStockData, CryptoData
 All database operations use the SQLModel ORM:
 
 ```python
-# ✅ Good: Using ORM
+# Good: Using ORM
 session.exec(select(USStockData).where(USStockData.ticker == "AAPL")).all()
 
-# ❌ Bad: Raw SQL (not used in this project)
+# Bad: Raw SQL (not used in this project)
 session.exec("SELECT * FROM us_stock_data WHERE ticker = 'AAPL'").all()
 ```
 
