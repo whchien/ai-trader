@@ -245,6 +245,32 @@ class MyCustomStrategy(BaseStrategy):
 
 The new strategy is automatically available to the CLI and `run_backtest` function.
 
+## Running with Docker
+
+No local Python/TA-Lib setup required — build and run the CLI in a container:
+
+```bash
+# Build the image
+docker build -t ai-trader:local .
+
+# Run any CLI command (mount ./data and ./config to persist/share files)
+docker run --rm -v "$(pwd)/data:/app/data" -v "$(pwd)/config:/app/config" \
+  ai-trader:local run config/backtest/classic/sma_example.yaml
+
+docker run --rm -v "$(pwd)/data:/app/data" -v "$(pwd)/config:/app/config" \
+  ai-trader:local fetch AAPL --market us_stock --start-date 2024-01-01
+```
+
+Or with Docker Compose:
+
+```bash
+# CLI (defaults to --help; override with `docker compose run`)
+docker compose run --rm ai-trader run config/backtest/classic/sma_example.yaml
+
+# MCP server, for connecting an AI assistant to a containerized instance
+docker compose up ai-trader-mcp
+```
+
 ## Documentation & Resources
 
 - **[Strategy Examples](ai_trader/backtesting/strategies/README.md)**: Details on built-in strategies.
