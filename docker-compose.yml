@@ -1,0 +1,18 @@
+services:
+  ai-trader:
+    build: .
+    image: ai-trader:local
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    command: ["--help"]
+
+  ai-trader-mcp:
+    build: .
+    image: ai-trader:local
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    entrypoint: ["python", "-m", "ai_trader.mcp"]
+    stdin_open: true
+    tty: true
