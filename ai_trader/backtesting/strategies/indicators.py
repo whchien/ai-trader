@@ -212,9 +212,12 @@ class TripleRSI(bt.Indicator):
     )
 
     def __init__(self, rsi_short, rsi_mid, rsi_long, oversold, overbought):
-        self.rsi_short = bt.indicators.RSI(period=rsi_short)
-        self.rsi_mid = bt.indicators.RSI(period=rsi_mid)
-        self.rsi_long = bt.indicators.RSI(period=rsi_long)
+        # safediv=True avoids ZeroDivisionError inside the RSI indicator on
+        # flat / zero-volatility windows (up and down both zero), which
+        # otherwise crashes the whole backtest.
+        self.rsi_short = bt.indicators.RSI(period=rsi_short, safediv=True)
+        self.rsi_mid = bt.indicators.RSI(period=rsi_mid, safediv=True)
+        self.rsi_long = bt.indicators.RSI(period=rsi_long, safediv=True)
         self.oversold = oversold
         self.overbought = overbought
 
@@ -234,8 +237,18 @@ class TripleRSI(bt.Indicator):
         cond_3 = min([r > self.oversold for r in recent_short_rsi])
 
         # Short-term RSI in an uptrend
-        cond_4 = (self.rsi_short[0] / self.rsi_short[-2] - 1) > 0.02
-        value += abs(self.rsi_short[0] / self.rsi_short[-2])
+        # Short-term RSI in an uptrend
+        # Guard against a zero RSI two bars ago (sustained losses), which
+        # would raise ZeroDivisionError and crash the whole backtest.
+        prev_short_rsi = self.rsi_short[-2]
+        if prev_short_rsi:
+            rsi_ratio = self.rsi_short[0] / prev_short_rsi
+        else:
+            # A positive current RSI after zero is a strong rebound; treat it
+            # as a large rise, otherwise as no change.
+            rsi_ratio = 2.0 if self.rsi_short[0] > 0 else 1.0
+        cond_4 = (rsi_ratio - 1) > 0.02
+        value += abs(rsi_ratio)
 
         self.lines.signal[0] = 1 if cond_1 & cond_2 & cond_3 & cond_4 else -1
         self.lines.value[0] = value
